@@ -1,4 +1,7 @@
 # per-frame PNGs are a build product; only the stills, the poster and the MP4s are committed
 out/frames/
+out/frames_v/
+out/poster_src/
+out/render.log
 out/**/*.tmp.png
 __pycache__/
