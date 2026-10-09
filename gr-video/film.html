@@ -1,0 +1,1103 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Golden Ratio film</title>
+<!-- DM Sans + Noto Sans Devanagari, downloaded from Google Fonts into fonts/ so the render never depends on the network -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #FFFFFF;
+    font-family: 'DM Sans', 'Noto Sans Devanagari', sans-serif; color: #16181D;
+    -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+  }
+  #stage div, #measure div { box-sizing: border-box; }
+  .a { position: absolute; }
+  .deva { font-family: 'Noto Sans Devanagari', 'DM Sans', sans-serif; }
+  #measure { position: absolute; left: -6000px; top: 0; visibility: hidden;
+    font-family: 'DM Sans', 'Noto Sans Devanagari', sans-serif; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="measure"></div>
+<script>
+'use strict';
+
+/* =====================================================================
+   SETTINGS — the only invented details are the project, price, buyer and
+   sales person below. Every number on screen comes from the brief.
+   ===================================================================== */
+const SHOW_SHEET  = true;                         // S6 on/off. Off = film runs 84 s, all later cuts shift by 180 frames.
+const SHEET_TITLE = 'Leads — Skyline Residency';  // change the destination here without touching the rest
+const PROJECT = 'Skyline Residency';
+const PRICE   = '₹72L';
+const PHONE   = '98xxx 41208';
+const BUYER   = 'Rahul P.';
+const SALES   = 'Sneha';
+
+const C = {
+  page: '#FFFFFF', panel: '#F6F7F9', dark: '#16181D', ink: '#16181D', grey: '#6B7280', hair: '#E6E8EC',
+  green: '#12A471', coral: '#F4573B', blue: '#3E7BFA', gold: '#C98A2B',
+  // drawing tones borrowed from the illustrated pitch deck
+  slate: '#2B3240', skin: '#F3C9A6', mouth: '#C99A72', mute: '#CFD5DC', mute2: '#9AA1AC',
+  greenTint: '#E3F5EC', darkPanel: '#1E2127', darkLine: '#2E323A',
+};
+const AMBER = '#E0A526'; // "site visit scheduled" edge, named in the brief
+
+/* ============================ motion core ============================ */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const E = {
+  lin: t => t,
+  out: t => 1 - Math.pow(1 - t, 3),
+  out5: t => 1 - Math.pow(1 - t, 5),
+  in: t => t * t * t,
+  in2: t => t * t,
+  io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  sio: t => -(Math.cos(Math.PI * t) - 1) / 2,
+};
+function outBack(s) { return t => { const u = t - 1; return 1 + (s + 1) * u * u * u + s * u * u; }; }
+function backFor(peak) { // overshoot curve whose peak is exactly `peak` past the target
+  let lo = 0, hi = 6;
+  for (let i = 0; i < 50; i++) {
+    const s = (lo + hi) / 2, f = outBack(s); let m = 0;
+    for (let k = 0; k <= 400; k++) m = Math.max(m, f(k / 400));
+    if (m - 1 > peak) hi = s; else lo = s;
+  }
+  return outBack((lo + hi) / 2);
+}
+E.pop6 = backFor(0.06); E.back = backFor(0.12); E.back4 = backFor(0.04);
+
+// keyframe table: [[frame, value, easeIntoNext?], ...]
+function kf(f, keys, ease = E.io) {
+  if (f <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (f <= b[0]) return lerp(a[1], b[1], (a[2] || ease)((f - a[0]) / (b[0] - a[0])));
+  }
+  return keys[keys.length - 1][1];
+}
+const P = (f, a, b, e = E.lin) => e(clamp((f - a) / (b - a)));
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }; // seeded, no Math.random
+const mixHex = (a, b, t) => {
+  const pa = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+  return '#' + pa.map((v, i) => Math.round(lerp(v, pb[i], clamp(t))).toString(16).padStart(2, '0')).join('');
+};
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* blur: round blur via CSS, directional smear via SVG feGaussianBlur with separate x/y */
+let DEFS = [], FID = 0;
+function dbl(sx, sy) {
+  sx = Math.abs(sx); sy = Math.abs(sy);
+  if (sx < 0.25 && sy < 0.25) return '';
+  const id = 'f' + (FID++);
+  DEFS.push(`<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${sx.toFixed(2)} ${sy.toFixed(2)}"/></filter>`);
+  return `url(#${id})`;
+}
+const rbl = r => r < 0.2 ? '' : `blur(${r.toFixed(2)}px)`;
+const F = (...p) => { p = p.filter(Boolean); return p.length ? `filter:${p.join(' ')};` : ''; };
+const mb = (vx, vy, k = 0.4, cap = 26) => dbl(Math.min(cap, Math.abs(vx) * k), Math.min(cap, Math.abs(vy) * k));
+const vel = (fn, f) => fn(f) - fn(f - 1);
+const cmb = (vx, vy) => mb(vx, vy, .12, 3); // small, capped smear for the cursor and thumbs so they never read as a smudge
+const A = (st, inner = '') => `<div class="a" style="${st}">${inner}</div>`;
+
+/* ============================ shared assets ============================ */
+function headG(cx, cy, r, hair = 'buyer') {
+  let h = '';
+  if (hair === 'sneha') h += `<circle cx="${cx + r * .6}" cy="${cy - r * .82}" r="${r * .4}" fill="${C.slate}"/>`;
+  h += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.skin}"/>`;
+  if (hair === 'sneha')
+    h += `<path d="M${cx - r} ${cy + r * .35} L${cx - r} ${cy - r * .2} A${r} ${r * .95} 0 0 1 ${cx + r} ${cy - r * .2} L${cx + r} ${cy + r * .35} L${cx + r * .78} ${cy - r * .12} L${cx - r * .78} ${cy - r * .12} Z" fill="${C.slate}"/>`;
+  else h += `<path d="M${cx - r} ${cy - r * .2} A${r} ${r * .93} 0 0 1 ${cx + r} ${cy - r * .2} Z" fill="${C.slate}"/>`;
+  h += `<circle cx="${cx - r * .34}" cy="${cy + r * .16}" r="${r * .1}" fill="${C.slate}"/><circle cx="${cx + r * .34}" cy="${cy + r * .16}" r="${r * .1}" fill="${C.slate}"/>`;
+  h += `<path d="M${cx - r * .24} ${cy + r * .46} Q${cx} ${cy + r * .62} ${cx + r * .24} ${cy + r * .46}" stroke="${C.mouth}" stroke-width="${r * .11}" stroke-linecap="round" fill="none"/>`;
+  return h;
+}
+// the buyer — one character, the same everywhere
+function buyerSVG(w) {
+  return `<svg width="${w}" height="${w * 210 / 120}" viewBox="0 0 120 210" style="display:block">
+    <rect x="34" y="150" width="18" height="56" rx="9" fill="${C.slate}"/><rect x="68" y="150" width="18" height="56" rx="9" fill="${C.slate}"/>
+    <rect x="22" y="88" width="76" height="80" rx="30" fill="${C.blue}"/>${headG(60, 52, 32)}</svg>`;
+}
+function avatar(size, who = 'buyer', bg = C.panel) {
+  const shirt = who === 'sneha' ? C.slate : C.blue;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="display:block">
+    <clipPath id="avc"><circle cx="50" cy="50" r="50"/></clipPath>
+    <g clip-path="url(#avc)"><rect width="100" height="100" fill="${bg}"/>
+    <rect x="18" y="78" width="64" height="60" rx="28" fill="${shirt}"/>${headG(50, 50, 25, who)}</g></svg>`;
+}
+function thumb(tipX, tipY, rot = -14, press = 0, extra = '') {
+  return A(`left:${tipX - 75}px;top:${tipY - 22}px;width:150px;height:400px;transform-origin:75px 22px;transform:rotate(${rot}deg) translateY(${press * 7}px) scale(${1 - press * .02});${extra}`,
+    `<svg width="150" height="400" viewBox="0 0 150 400" style="display:block;overflow:visible">
+      <path d="M26 400 L26 100 Q26 20 75 20 Q124 20 124 100 L124 400 Z" fill="${C.skin}" stroke="#E2B48E" stroke-width="2"/>
+      <path d="M46 46 Q75 30 104 46 L102 104 Q75 116 48 104 Z" fill="#F9E1CF"/>
+      <path d="M40 182 Q75 194 110 182" stroke="#E2AE88" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`);
+}
+function cursor(x, y, s = 1, extra = '') { // macOS arrow, black fill, white outline, soft shadow; callers cap blur via cmb()
+  return A(`left:${x - 3}px;top:${y - 3}px;width:40px;height:56px;transform-origin:3px 3px;transform:scale(${s});${extra}`,
+    `<svg width="40" height="56" viewBox="0 0 26 36" style="display:block;overflow:visible;filter:drop-shadow(0 3px 4px rgba(22,24,29,.28))">
+      <path d="M2 2 L2 28 L8.4 22 L12.6 31.6 L17 29.6 L12.9 20.3 L21.6 20.3 Z" fill="#16181D" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/></svg>`);
+}
+const ICON = {
+  search: (s, c = C.grey) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><circle cx="10.5" cy="10.5" r="6.5" stroke="${c}" stroke-width="2.4" fill="none"/><path d="M15.5 15.5 L21 21" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  chat: (s, c = '#fff') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M12 3 a9 9 0 0 1 0 18 a9 9 0 0 1 -4.4 -1.15 L3 21 l1.2 -4.4 A9 9 0 0 1 12 3 z" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 9.2 q0.6 3.6 5.6 5.6" stroke="${c}" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>`,
+  phone: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M6.6 3.5 a2 2 0 0 1 2.5 -.6 l2 3 l-2 2 a10 10 0 0 0 7 7 l2 -2 l3 2 a2 2 0 0 1 -.6 2.5 c-3.5 2.8 -16.7 -10.4 -13.9 -13.9 z" fill="${c}"/></svg>`,
+  doc: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M6 2 h8 l5 5 v13 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 V4 a2 2 0 0 1 2 -2 z" fill="${c}"/><path d="M14 2 v5 h5" fill="#FFFFFF" opacity=".35"/><rect x="7" y="12" width="10" height="1.8" rx=".9" fill="#fff"/><rect x="7" y="15.6" width="7" height="1.8" rx=".9" fill="#fff"/></svg>`,
+  pin: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M12 2 a7.5 7.5 0 0 1 7.5 7.5 c0 5.6 -7.5 12.5 -7.5 12.5 s-7.5 -6.9 -7.5 -12.5 A7.5 7.5 0 0 1 12 2 z" fill="${c}"/><circle cx="12" cy="9.5" r="2.8" fill="#fff"/></svg>`,
+  clock: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><circle cx="12" cy="13" r="8.5" stroke="${c}" stroke-width="2.2" fill="none"/><path d="M12 8.5 V13 l3 2" stroke="${c}" stroke-width="2.2" stroke-linecap="round" fill="none"/><rect x="9.5" y="1.6" width="5" height="2.4" rx="1.2" fill="${c}"/></svg>`,
+  person: (s, c = '#fff') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><circle cx="12" cy="8" r="4" fill="${c}"/><path d="M4 21 a8 7 0 0 1 16 0 z" fill="${c}"/></svg>`,
+  shield: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M12 2 l8 3 v6 c0 5 -3.5 9 -8 11 c-4.5 -2 -8 -6 -8 -11 V5 z" fill="${c}"/><path d="M8.5 12 l2.5 2.5 l4.5 -5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  cal: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="${c}" stroke-width="2.2"/><path d="M3 10 h18" stroke="${c}" stroke-width="2.2"/><rect x="7" y="2" width="2.2" height="5" rx="1.1" fill="${c}"/><rect x="14.8" y="2" width="2.2" height="5" rx="1.1" fill="${c}"/></svg>`,
+  back: (s, c = C.ink) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M19 12 H6 M11 6 l-6 6 l6 6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  chev: (s, c = C.grey) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><path d="M6 9 l6 6 l6 -6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  grid: (s, c = C.green) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" style="display:block"><rect x="3" y="3" width="18" height="18" rx="3" fill="${c}"/><path d="M3 9.5 h18 M3 15 h18 M9.5 9.5 v11.5" stroke="#fff" stroke-width="1.6"/></svg>`,
+};
+// WhatsApp-style double tick (shape used for the S5 → S6 match cut)
+const TICK_D = 'M2 11 l6 6 l12 -14 M14 17 l1 -1 l14 -15';
+const tick2 = (w, c) => `<svg width="${w}" height="${w * 20 / 34}" viewBox="0 0 34 20" style="display:block;overflow:visible"><path d="${TICK_D}" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const bar = (x, y, w, h, c = C.hair, r = null) => A(`left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:${r == null ? h / 2 : r}px;background:${c}`);
+
+// flat tower illustration (ad image and the project page hero)
+function towerArt(w, h, grey = false) {
+  const main = grey ? C.mute : C.ink, side = grey ? '#DCE0E5' : C.grey, back = grey ? '#E6E8EC' : C.hair;
+  let win = '';
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 4; c++)
+    win += `<rect x="${112 + c * 15}" y="${52 + r * 15}" width="8" height="8" rx="1.5" fill="#FFFFFF" opacity="${grey ? .5 : (hash(r * 7 + c) > .62 ? .9 : .22)}"/>`;
+  for (let r = 0; r < 6; r++) for (let c = 0; c < 2; c++)
+    win += `<rect x="${188 + c * 18}" y="${96 + r * 15}" width="9" height="8" rx="1.5" fill="#FFFFFF" opacity="${grey ? .5 : .3}"/>`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 300 200" preserveAspectRatio="xMidYMax slice" style="display:block">
+    <rect width="300" height="200" fill="${grey ? '#EDEFF2' : C.panel}"/>
+    <rect x="54" y="112" width="44" height="80" rx="4" fill="${back}"/><rect x="240" y="126" width="34" height="66" rx="4" fill="${back}"/>
+    <rect x="102" y="38" width="76" height="154" rx="5" fill="${main}"/>
+    <rect x="182" y="84" width="50" height="108" rx="5" fill="${side}"/>${win}
+    <circle cx="40" cy="176" r="14" fill="${grey ? '#DCE0E5' : C.mute}"/><circle cx="258" cy="178" r="12" fill="${grey ? '#DCE0E5' : C.mute}"/>
+    <rect x="0" y="190" width="300" height="10" fill="${back}"/></svg>`;
+}
+
+/* ===================== phone UIs (designed 372 px wide) ===================== */
+const D = 2.6;            // full-frame scale for a phone UI ("the screen becomes the frame")
+const COLX = 960 - 186 * D;
+const QUERY = '2 bhk in wakad ready possession';
+
+function resultCard(i) {
+  if (i === 0) return `
+    <div class="a" style="left:12px;top:9px;display:flex;align-items:center;gap:6px;white-space:nowrap">
+      <span style="font-size:8.5px;font-weight:700;border:1px solid ${C.ink};border-radius:4px;padding:0 4px;line-height:12px">Ad</span>
+      <span style="font-size:8.5px;color:${C.grey}">${PROJECT}, Wakad</span></div>
+    <div class="a" style="left:12px;top:24px;font-size:12.5px;font-weight:500;color:${C.blue};white-space:nowrap">2 BHK homes in Wakad — ${PROJECT}</div>
+    <div class="a" style="left:12px;top:42px;font-size:9px;color:${C.grey};white-space:nowrap">745 sq ft · ${PRICE} all inclusive · Possession Dec 2027</div>`;
+  const t = i === 1 ? '2 BHK flats for sale in Wakad, Pune' : 'Ready possession homes near Wakad';
+  return `${bar(12, 12, 84, 5)}
+    <div class="a" style="left:12px;top:22px;font-size:12.5px;font-weight:500;white-space:nowrap">${t}</div>
+    ${bar(12, 43, 250, 5)}${bar(12, 52, 170, 5)}`;
+}
+const RES_Y = i => 88 + i * 70;
+function googleUI(lf, o = {}) {
+  const n = lf < 8 ? 0 : clamp(Math.floor((lf - 8) / 2) + 1, 0, QUERY.length);
+  const typing = lf >= 8 && n < QUERY.length;
+  const caretOn = !o.noCaret && (typing || ((Math.floor(lf / 8) % 2) + 2) % 2 === 0);
+  let h = A(`left:14px;top:34px;width:344px;height:40px;border-radius:20px;border:1px solid ${C.hair};background:#fff;box-shadow:0 1px 5px rgba(22,24,29,.07)`,
+    A(`left:13px;top:13px`, ICON.search(14)) +
+    A(`left:36px;top:0;height:40px;line-height:40px;font-size:14px;white-space:nowrap`,
+      `${esc(QUERY.slice(0, n))}<span style="display:inline-block;width:1.3px;height:17px;background:${C.ink};vertical-align:-3px;margin-left:1px;opacity:${caretOn ? 1 : 0}"></span>`));
+  for (let i = 0; i < 3; i++) {
+    const a = 78 + i * 4, t = P(lf, a, a + 14, E.out);
+    if (t <= 0 || (o.skip && o.skip(i))) continue;
+    const dy = (1 - t) * 40, v = 40 * (P(lf, a, a + 14, E.out) - P(lf - 1, a, a + 14, E.out));
+    const press = i === 0 && o.press ? o.press : 0;
+    h += A(`left:14px;top:${RES_Y(i) + dy}px;width:344px;height:62px;border-radius:12px;border:1px solid ${C.hair};background:${press > 0 ? mixHex('#FFFFFF', C.panel, press * 2) : '#fff'};opacity:${clamp(t * 1.6)};transform:scale(${1 - press * .04});${F(mb(0, v, .35))}`, resultCard(i));
+  }
+  return h;
+}
+
+function dullPage() { // the template page he leaves (S3, and the left half of S4)
+  let h = A(`left:0;top:0;width:372px;height:44px;background:${C.panel};border-bottom:1px solid ${C.hair}`,
+    A(`left:16px;top:14px;font-size:12px;font-weight:500;color:${C.mute2}`, PROJECT) + bar(318, 16, 18, 3, C.mute) + bar(318, 22, 18, 3, C.mute) + bar(318, 28, 18, 3, C.mute));
+  h += A(`left:0;top:44px;width:372px;height:180px;overflow:hidden`, towerArt(372, 180, true));
+  h += A(`left:16px;top:240px;font-size:18px;font-weight:700;color:${C.mute2}`, PROJECT);
+  h += bar(16, 272, 300, 7) + bar(16, 286, 260, 7) + bar(16, 300, 280, 7);
+  h += A(`left:16px;top:328px;font-size:11px;font-weight:700;color:${C.mute2};letter-spacing:1px`, 'OVERVIEW');
+  for (let i = 0; i < 5; i++) h += bar(16, 350 + i * 14, 340 - hash(i + 3) * 90, 7);
+  for (let i = 0; i < 4; i++) h += bar(16 + (i % 2) * 174, 432 + Math.floor(i / 2) * 104, 166, 96, '#EDEFF2', 8);
+  h += A(`left:16px;top:648px;font-size:11px;font-weight:700;color:${C.mute2};letter-spacing:1px`, 'ENQUIRE NOW');
+  for (let i = 0; i < 3; i++) h += A(`left:16px;top:${670 + i * 44}px;width:340px;height:34px;border:1px solid ${C.hair};border-radius:6px;background:#fff`);
+  h += A(`left:16px;top:804px;width:340px;height:38px;border-radius:6px;background:${C.mute};color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:38px`, 'Submit');
+  for (let i = 0; i < 3; i++) h += bar(16, 870 + i * 14, 300 - i * 40, 7);
+  return h;
+}
+
+// the real project page: element k rises 20 px into place, staggered 6 frames
+function realPage(lf, o = {}) {
+  const el = (k, inner, top, hgt) => {
+    const a = (o.start ?? 0) + k * 6, t = o.built ? 1 : P(lf, a, a + 12, E.out);
+    if (t <= 0) return '';
+    return A(`left:0;top:${top + (1 - t) * 20}px;width:372px;height:${hgt}px;opacity:${clamp(t * 1.4)}`, inner);
+  };
+  let h = el(0, A(`left:0;top:0;width:372px;height:236px;overflow:hidden`, towerArt(372, 236)) +
+    A(`left:16px;top:248px;font-size:20px;font-weight:700;white-space:nowrap`, PROJECT) +
+    A(`left:16px;top:276px;font-size:11.5px;color:${C.grey}`, 'Wakad, Pune'), 0, 300);
+  h += el(1, A(`left:14px;top:0;width:344px;height:56px;border-radius:12px;background:${C.panel}`,
+    A(`left:14px;top:10px;font-size:10.5px;color:${C.grey}`, '2 BHK · 745 sq ft') +
+    A(`left:14px;top:25px;font-size:19px;font-weight:700`, PRICE + ` <span style="font-size:10.5px;font-weight:500;color:${C.grey}">all inclusive</span>`)), 306, 56);
+  const plan = `<svg width="130" height="88" viewBox="0 0 130 88" style="display:block"><rect x="4" y="4" width="122" height="80" rx="3" fill="#fff" stroke="${C.ink}" stroke-width="2"/>
+    <path d="M60 4 V50 M4 46 H60 M60 34 H126 M92 34 V84" stroke="${C.ink}" stroke-width="1.6" fill="none"/><path d="M60 62 a10 10 0 0 1 10 -10" stroke="${C.grey}" stroke-width="1.2" fill="none"/></svg>`;
+  h += el(2, A(`left:14px;top:0;width:344px;height:108px;border-radius:12px;border:1px solid ${C.hair};background:#fff`,
+    A(`left:10px;top:9px`, plan) + A(`left:156px;top:22px;font-size:13px;font-weight:700`, 'Floor plan') +
+    A(`left:156px;top:42px;font-size:10.5px;color:${C.grey}`, '2 BHK · 745 sq ft') +
+    A(`left:156px;top:68px;font-size:10.5px;font-weight:700`, 'View plan →')), 374, 108);
+  h += el(3, A(`left:14px;top:0;width:344px;height:38px;border-bottom:1px solid ${C.hair};display:flex;align-items:center;gap:8px;font-size:11.5px`,
+    ICON.shield(15) + `<span style="font-weight:700">MahaRERA registered</span><span style="margin-left:auto;color:${C.grey}">Pxxxxxxxxxxx</span>`), 494, 38);
+  h += el(4, A(`left:14px;top:0;width:344px;height:38px;display:flex;align-items:center;gap:8px;font-size:11.5px`,
+    ICON.cal(15) + `<span style="color:${C.grey}">Possession</span><span style="margin-left:auto;font-weight:700">Dec 2027</span>`), 536, 38);
+  return h;
+}
+const BTN = { x: 12, y: 12, w: 222, h: 46 }; // WhatsApp button inside the 70 px sticky bar
+function stickyBar(o = {}) {
+  let h = A(`left:0;top:0;width:372px;height:70px;background:#fff;border-top:1px solid ${C.hair}`,
+    (o.hideBtn ? '' : A(`left:${BTN.x}px;top:${BTN.y}px;width:${BTN.w}px;height:${BTN.h}px;border-radius:23px;background:${o.flash ? mixHex(C.green, '#7DD8B4', o.flash) : C.green};display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:15px;font-weight:700`, ICON.chat(17) + 'WhatsApp')) +
+    A(`left:246px;top:12px;width:114px;height:46px;border-radius:23px;border:1.5px solid ${C.ink};display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700`, ICON.phone(15) + 'Call'));
+  return h;
+}
+
+// instagram-style feed post, 372 wide
+function igPost(kind, o = {}) {
+  const ad = kind === 'ad';
+  let h = A(`left:12px;top:10px;width:24px;height:24px;border-radius:12px;background:${ad ? C.ink : C.hair}`,
+    ad ? A(`left:0;top:0;width:24px;line-height:24px;text-align:center;color:#fff;font-size:11px;font-weight:700`, 'S') : '');
+  h += ad ? A(`left:44px;top:9px;font-size:11px;font-weight:700;white-space:nowrap`, PROJECT + ', Wakad') + A(`left:44px;top:24px;font-size:8.5px;color:${C.grey}`, 'Sponsored')
+          : bar(44, 14, 90, 6) + bar(44, 25, 54, 5);
+  let img;
+  if (ad) img = o.hideArt ? '' : towerArt(372, 372);
+  else if (kind === 'g1') img = `<svg width="372" height="372" viewBox="0 0 100 100" style="display:block"><rect width="100" height="100" fill="${C.panel}"/><path d="M0 74 L28 44 L46 62 L66 36 L100 72 V100 H0 Z" fill="${C.hair}"/><circle cx="74" cy="22" r="8" fill="#fff"/></svg>`;
+  else img = `<svg width="372" height="372" viewBox="0 0 100 100" style="display:block"><rect width="100" height="100" fill="${C.panel}"/><rect x="34" y="38" width="28" height="34" rx="4" fill="${C.hair}"/><path d="M62 46 q12 0 12 9 q0 9 -12 9" stroke="${C.hair}" stroke-width="4" fill="none"/><rect x="26" y="74" width="46" height="5" rx="2.5" fill="${C.hair}"/></svg>`;
+  h += A(`left:0;top:44px;width:372px;height:372px;overflow:hidden;background:${C.panel};transform:scale(${1 - (o.press || 0) * .02})`, img);
+  let y = 416;
+  if (ad) { h += A(`left:0;top:416px;width:372px;height:36px;background:${C.blue};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;padding:0 12px`, `Learn more<span style="margin-left:auto">›</span>`); y = 452; }
+  h += A(`left:12px;top:${y + 12}px;width:16px;height:16px;border-radius:8px;border:1.6px solid ${C.mute}`) + A(`left:38px;top:${y + 12}px;width:16px;height:16px;border-radius:8px;border:1.6px solid ${C.mute}`) + bar(12, y + 36, 140, 5);
+  return { html: h, height: y + 50 };
+}
+
+/* ============================ chat (S5) ============================ */
+const CH = { x: 480, y: 36, w: 960, head: 104, bodyH: 720 };        // header rect is the S4 → S5 match-cut target
+const THREAD = { x: CH.x + 26, w: CH.w - 52, top: CH.y + CH.head, h: CH.bodyH, pad: 22 };
+const MSGS = [
+  { who: 'him', text: 'Is the 2 BHK still available?', time: '10:44 PM', t: 24 },
+  { who: 'us', text: `Yes. 745 sq ft, ${PRICE} all inclusive, possession Dec 2027.`, time: '10:44 PM', ty: 32, t: 84 },
+  { who: 'us', kind: 'doc', text: 'Floor plan and price list', time: '10:44 PM', t: 100 },
+  { who: 'us', kind: 'map', text: 'Location and amenities', time: '10:44 PM', t: 114 },
+  { who: 'us', text: 'To move in, or investing?', time: '10:44 PM', t: 132 },
+  { who: 'him', text: 'राहायला. शनिवारी बघू शकतो का?', sub: 'To live in. Can I see it on Saturday?', deva: true, time: '10:45 PM', ty: 148, t: 176 },
+  { who: 'us', text: 'Site visit booked — Saturday, 11 AM. Location sent.', time: '10:45 PM', ty: 186, t: 212 },
+  { who: 'him', text: 'call me', time: '10:46 PM', ty: 262, t: 280 },
+  { who: 'us', text: 'Sure — connecting you to our sales team now.', time: '10:46 PM', ty: 286, t: 300 },
+  { who: 'sys', text: 'Handed to a human', t: 318 },
+];
+const LAST_US = 8;
+function bubbleInner(m, blue = 0) {
+  const meta = m.who === 'us'
+    ? `<span style="font-size:16px;color:${C.grey}">${m.time}</span>${tick2(22, mixHex(C.mute2, C.blue, blue))}`
+    : `<span style="font-size:16px;color:${C.grey}">${m.time}</span>`;
+  let body;
+  if (m.kind === 'doc' || m.kind === 'map') {
+    const ic = m.kind === 'doc'
+      ? `<div style="width:64px;height:64px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center">${ICON.doc(34)}</div>`
+      : `<div style="width:64px;height:64px;border-radius:12px;background:#fff;overflow:hidden"><svg width="64" height="64" viewBox="0 0 64 64" style="display:block"><rect width="64" height="64" fill="${C.panel}"/><path d="M0 40 L64 22 M18 0 L30 64 M0 12 L64 50" stroke="${C.hair}" stroke-width="5"/><path d="M32 14 a10 10 0 0 1 10 10 c0 8 -10 18 -10 18 s-10 -10 -10 -18 a10 10 0 0 1 10 -10 z" fill="${C.ink}"/><circle cx="32" cy="24" r="3.6" fill="#fff"/></svg></div>`;
+    body = `<div style="display:flex;align-items:center;gap:16px">${ic}<div><div style="font-size:24px;font-weight:700;white-space:nowrap">${m.text}</div><div style="font-size:17px;color:${C.grey};margin-top:2px">${m.kind === 'doc' ? 'PDF' : 'Map'}</div></div></div>`;
+  } else body = `<span class="${m.deva ? 'deva' : ''}" style="font-size:26px;line-height:36px">${m.text}</span>`;
+  return `${body}<span style="display:inline-block;width:${m.who === 'us' ? 112 : 84}px"></span><div class="a" style="right:16px;bottom:9px;display:flex;align-items:center;gap:6px">${meta}</div>`;
+}
+function bubbleBox(m, w, hgt, blue) {
+  const us = m.who === 'us';
+  return `<div class="a" style="left:0;top:0;width:${w}px;height:${hgt}px;padding:12px 18px 14px 18px;border-radius:${us ? '22px 6px 22px 22px' : '6px 22px 22px 22px'};background:${us ? C.greenTint : '#fff'};${us ? '' : `border:1px solid ${C.hair};`}box-shadow:0 1px 2px rgba(22,24,29,.06)">${bubbleInner(m, blue)}</div>`;
+}
+let MSZ = null; // measured bubble sizes
+function measureChat() {
+  const box = document.getElementById('measure');
+  MSZ = MSGS.map(m => {
+    if (m.who === 'sys') return { w: 360, h: 56, total: 56 };
+    box.innerHTML = `<div style="display:inline-block;max-width:760px;padding:12px 18px 14px 18px;position:relative">${bubbleInner(m)}</div>`;
+    const el = box.firstChild, w = Math.ceil(el.getBoundingClientRect().width) + 2, hgt = Math.ceil(el.getBoundingClientRect().height);
+    return { w, h: hgt, total: hgt + (m.sub ? 30 : 0) };
+  });
+  box.innerHTML = '';
+}
+const TYPING_H = 56, GAP = 12;
+function slotH(i, T) { const m = MSGS[i]; if (T >= m.t) return MSZ[i].total; if (m.ty != null && T >= m.ty) return TYPING_H; return 0; }
+function threadLayout(T) {
+  let y = 0; const out = [];
+  for (let i = 0; i < MSGS.length; i++) { const hh = slotH(i, T); out.push({ y, h: hh }); if (hh) y += hh + GAP; }
+  return { slots: out, bottom: y };
+}
+let SCROLL_EV = null;
+function chatScroll(T) {
+  if (!SCROLL_EV) {
+    const times = new Set([0]);
+    MSGS.forEach(m => { times.add(m.t); if (m.ty != null) times.add(m.ty); });
+    const tl = [...times].sort((a, b) => a - b);
+    SCROLL_EV = tl.map(t => ({ t, s: Math.max(0, threadLayout(t).bottom + THREAD.pad - THREAD.h) }));
+  }
+  let s = SCROLL_EV[0].s;
+  for (let k = 1; k < SCROLL_EV.length; k++) s += (SCROLL_EV[k].s - SCROLL_EV[k - 1].s) * P(T, SCROLL_EV[k].t, SCROLL_EV[k].t + 10, E.out);
+  return s;
+}
+const S5_HOLD = [92, 112]; // the 0:09 hold — 20 frames, deliberate
+const s5T = lf => lf < S5_HOLD[0] ? lf : lf < S5_HOLD[1] ? S5_HOLD[0] : lf - (S5_HOLD[1] - S5_HOLD[0]);
+function lastTickPos(T) { // stage position of the double tick on the last "us" message
+  const L = threadLayout(T), sl = L.slots[LAST_US], sc = chatScroll(T);
+  const right = THREAD.x + THREAD.w, bottom = THREAD.top + THREAD.pad + sl.y + MSZ[LAST_US].h - sc;
+  return { x: right - 16 - 11, y: bottom - 9 - 7 };
+}
+
+/* ============================ sheet (S6) ============================ */
+const SH = { x: 410, y: 150, w: 1100, title: 64, head: 48, row: 60 };
+const COLS = [{ l: 'Name', x: 0, w: 200 }, { l: 'Phone', x: 200, w: 200 }, { l: 'Project', x: 400, w: 260 }, { l: 'Source', x: 660, w: 160 }, { l: 'Status', x: 820, w: 280 }];
+const rowTop = k => SH.title + SH.head + k * SH.row;  // panel-relative
+const NEW_ROW = 4;
+const RAHUL = [BUYER, PHONE, PROJECT, 'WhatsApp', 'Site visit — Sat 11 AM'];
+const OLD = ['Old enquiry', '98xxx xxxxx', PROJECT, 'AI call', 'Budget 80 lakh'];
+function sheetCells(vals, o = {}) { // one row of cells, panel-relative x, row-relative y
+  let h = '';
+  COLS.forEach((c, i) => {
+    let v = vals[i]; if (v == null) return;
+    const n = o.chars ? o.chars[i] : v.length; v = v.slice(0, Math.max(0, n));
+    const status = i === 4;
+    h += A(`left:${c.x + 18 + (status ? 34 : 0)}px;top:0;height:${SH.row}px;line-height:${SH.row}px;font-size:21px;white-space:nowrap;transform-origin:left center;transform:scale(${o.land ? o.land[i] : 1});color:${C.ink}`, esc(v));
+  });
+  return h;
+}
+function sheetPanel(o = {}) {
+  let h = A(`left:0;top:0;width:${SH.w}px;height:640px;background:#fff;border:1px solid ${C.hair};border-radius:18px;box-shadow:0 18px 40px -28px rgba(22,24,29,.35);overflow:hidden`,
+    A(`left:22px;top:20px`, ICON.grid(24)) + A(`left:58px;top:16px;font-size:22px;font-weight:700;white-space:nowrap`, SHEET_TITLE) +
+    A(`left:0;top:${SH.title}px;width:${SH.w}px;height:${SH.head}px;background:${C.panel};border-top:1px solid ${C.hair};border-bottom:1px solid ${C.hair}`,
+      COLS.map(c => A(`left:${c.x + 18}px;top:0;line-height:${SH.head}px;font-size:16px;font-weight:700;color:${C.grey};letter-spacing:.5px`, c.l.toUpperCase())).join('')) +
+    COLS.slice(1).map(c => A(`left:${c.x}px;top:${SH.title}px;width:1px;height:${640 - SH.title}px;background:${C.hair}`)).join('') +
+    [0, 1, 2, 3, 4, 5, 6, 7].map(k => A(`left:0;top:${rowTop(k) + SH.row}px;width:${SH.w}px;height:1px;background:${C.hair}`)).join('') +
+    [0, 1, 2, 3].map(k => COLS.map((c, i) => bar(c.x + 18, rowTop(k) + 26, c.w * (.4 + .35 * hash(k * 5 + i)), 8, '#EDEFF2')).join('')).join('') +
+    (o.rows || []).map(r => A(`left:0;top:${rowTop(r.k)}px;width:${SH.w}px;height:${SH.row}px;background:${r.bg || 'transparent'}`, sheetCells(r.vals, r) + (r.tick ? A(`left:${COLS[4].x + 16}px;top:${SH.row / 2 - 7.5}px`, tick2(26, C.blue)) : ''))).join(''));
+  return h;
+}
+
+/* ============================ dashboard (S7) ============================ */
+const DB = { listX: 410, listY: 206, w: 1100, cardH: 84, pitch: 96 };
+function counterCard(val, o = {}) { // "Bookings" 11 → 12, digits rolling
+  const roll = o.roll || 0;
+  const digits = roll <= 0 ? `${val}` : '';
+  let num;
+  if (roll > 0 && roll < 1) {
+    const r = E.io(roll), v = Math.abs(vel(f => E.io(clamp(f)), roll)) * 600;
+    num = `<span>1</span><span style="display:inline-block;position:relative;height:56px;width:28px;overflow:hidden;vertical-align:top">
+      <span style="position:absolute;left:0;top:${-r * 56}px;${F(dbl(0, v * .08))}">1</span><span style="position:absolute;left:0;top:${56 - r * 56}px;${F(dbl(0, v * .08))}">2</span></span>`;
+  } else num = roll >= 1 ? '12' : digits;
+  return A(`left:1560px;top:40px;width:300px;height:100px;border-radius:18px;background:#fff;border:${o.flash ? 2 : 1}px solid ${o.flash ? mixHex(C.hair, C.green, o.flash) : C.hair}`,
+    A(`left:24px;top:14px;font-size:17px;font-weight:700;color:${C.grey};letter-spacing:1px`, 'BOOKINGS') +
+    A(`left:24px;top:36px;font-size:46px;font-weight:700;line-height:56px;white-space:nowrap`, num));
+}
+function skeletonCard(k) {
+  return A(`left:0;top:0;width:${DB.w}px;height:${DB.cardH}px;border-radius:16px;background:#fff;border:1px solid ${C.hair}`,
+    A(`left:24px;top:20px;width:44px;height:44px;border-radius:22px;background:${C.panel}`) + bar(84, 26, 150 + hash(k) * 60, 9, '#EDEFF2') + bar(84, 46, 100, 8, C.panel) +
+    bar(320, 37, 160, 9, '#EDEFF2') + bar(560, 34, 90, 16, C.panel, 8) + bar(820, 37, 150, 9, '#EDEFF2'));
+}
+// the lead: m = 0 → sheet row, 1 → dashboard card (same width, same text)
+function leadCard(m, o = {}) {
+  const hgt = lerp(SH.row, DB.cardH, m), mm = E.io(m);
+  const pos = [ // [row x, row y] → [card x, card y], font size row → card
+    [[18, 0], [84, 14], 21, 23, 700], [[218, 0], [84, 44], 21, 17, 400], [[418, 0], [320, 27], 21, 20, 500], [[678, 0], [574, 27], 21, 16, 700], [[872, 0], [820, 27], 21, 18, 400]];
+  let h = '';
+  RAHUL.forEach((v, i) => {
+    const [r, c, fs0, fs1, fw] = pos[i];
+    const x = lerp(r[0], c[0], mm), y = lerp(r[1], c[1], mm), fs = lerp(fs0, fs1, mm);
+    const isTag = i === 3, isStatus = i === 4;
+    const lh = lerp(SH.row, isTag ? 30 : (i === 1 ? 24 : 30), mm);
+    const style = `left:${x}px;top:${y}px;height:${lh}px;line-height:${lh}px;font-size:${fs}px;white-space:nowrap;font-weight:${m > .5 ? fw : 400};`;
+    if (isTag) h += A(style + `padding:0 ${12 * mm}px;border-radius:15px;background:${mixHex('#FFFFFF', C.blue, mm)};color:${mixHex(C.ink, '#FFFFFF', mm)}`, v);
+    else if (isStatus) h += A(style + `color:${mixHex(C.ink, C.grey, mm)};padding-left:${34 * (1 - mm)}px`, v) + (mm < 1 ? A(`left:${x + 16}px;top:${hgt / 2 - 7.5}px;opacity:${1 - mm}`, tick2(26, C.blue)) : '');
+    else h += A(style + `color:${i === 1 ? mixHex(C.ink, C.grey, mm) : C.ink}`, v);
+  });
+  // avatar + timer chip arrive with the card
+  if (m > 0) {
+    h += A(`left:24px;top:${hgt / 2 - 22}px;opacity:${mm};transform:scale(${lerp(.6, 1, mm)})`, avatar(44));
+    h += A(`left:704px;top:${hgt / 2 - 15}px;height:30px;padding:0 12px;border-radius:15px;border:1.5px solid ${C.green};color:${C.green};display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;opacity:${mm};transform:translateX(${(1 - mm) * 20}px)`, ICON.clock(16, C.green) + '9 sec');
+  }
+  if (o.assign) { const s = o.assign; h += A(`left:${DB.w - 64}px;top:${hgt / 2 - 20}px;transform:scale(${s});transform-origin:center`, avatar(40, 'sneha', '#FFFFFF')); }
+  const shadow = o.lift ? `0 ${10 + 14 * o.lift}px ${24 + 20 * o.lift}px -16px rgba(22,24,29,${.18 + .15 * o.lift})` : `0 ${8 * m}px ${20 * m}px -14px rgba(22,24,29,${.22 * m})`;
+  return A(`left:0;top:0;width:${DB.w}px;height:${hgt}px;border-radius:${16 * mm}px;background:${o.bg || '#fff'};border:1px solid ${C.hair};box-shadow:${shadow}`, h);
+}
+function dashChrome(t, o = {}) { // t: entrance 0 → 1
+  const e = E.out(t), v = (1 - e);
+  let h = '';
+  h += A(`left:${DB.listX}px;top:${46 - v * 140}px;font-size:40px;font-weight:700;letter-spacing:-1px`, 'Leads') +
+       A(`left:${DB.listX + 128}px;top:${64 - v * 140}px;font-size:20px;color:${C.grey}`, PROJECT);
+  h += A(`left:0;top:${-v * 160}px;width:1920px;height:1080px`, counterCard(o.count ?? 11, o));
+  const nav = ['All leads', 'WhatsApp', 'Google ads', 'Meta ads', 'AI calls'];
+  h += A(`left:${60 - v * 420}px;top:170px;width:300px;height:400px`, nav.map((n, i) => A(`left:0;top:${i * 56}px;width:300px;height:48px;border-radius:12px;background:${i === 0 ? C.panel : 'transparent'};padding-left:18px;line-height:48px;font-size:21px;font-weight:${i === 0 ? 700 : 500};color:${i === 0 ? C.ink : C.grey}`, n)).join(''));
+  h += A(`left:${DB.listX}px;top:${170 + v * 60}px;font-size:16px;font-weight:700;color:${C.grey};letter-spacing:1.5px;opacity:${e}`, 'NEW LEADS');
+  // team
+  let team = A(`left:0;top:0;font-size:16px;font-weight:700;color:${C.grey};letter-spacing:1.5px`, 'TEAM');
+  const hl = o.teamHL || 0;
+  team += A(`left:-12px;top:30px;width:324px;height:72px;border-radius:16px;background:${mixHex('#FFFFFF', C.greenTint, hl)};border:${hl > 0 ? 2 : 1}px solid ${hl > 0 ? mixHex(C.hair, C.green, hl) : 'transparent'};transform:scale(${1 + .03 * hl})`,
+    A(`left:12px;top:12px`, avatar(48, 'sneha')) + A(`left:74px;top:0;line-height:72px;font-size:21px;font-weight:700;white-space:nowrap`, `${SALES} — Sales`));
+  for (let k = 1; k < 3; k++) team += A(`left:0;top:${30 + k * 84}px;width:300px;height:72px`, A(`left:0;top:12px;width:48px;height:48px;border-radius:24px;background:${C.panel}`) + bar(62, 30, 120 + hash(k + 9) * 50, 10, '#EDEFF2'));
+  h += A(`left:${1560 + v * 420}px;top:170px;width:300px;height:300px`, team);
+  return h;
+}
+
+/* ============================ shots ============================ */
+const SHOTS = [];
+function shot(name, len, render) { SHOTS.push({ name, len, render }); }
+
+/* ---------- S1 · the hook ---------- */
+const PH1 = { w: 360, h: 717, rot: -10, cy: 446, k: 332 / 372 }; // screen = the 372 x 772 design at k
+function lockScreen(lf) {
+  const u = P(lf, 134, 150, E.in), v = vel(f => P(f, 134, 150, E.in), lf) * 420;
+  return A(`left:0;top:0;width:372px;height:772px;background:#fff;transform:translateY(${-u * 420}px);opacity:${1 - u * .3};${F(mb(0, v, .3))}`,
+    A(`left:0;top:96px;width:372px;display:flex;justify-content:center`, `<svg width="18" height="22" viewBox="0 0 18 22"><rect x="1" y="9" width="16" height="12" rx="3" fill="${C.ink}"/><path d="M4.5 9 V6.5 a4.5 4.5 0 0 1 9 0 V9" stroke="${C.ink}" stroke-width="2.2" fill="none"/></svg>`) +
+    A(`left:0;top:130px;width:372px;text-align:center;font-size:76px;font-weight:700;letter-spacing:-2px;line-height:88px`, `10:42<span style="font-size:30px;letter-spacing:0;font-weight:500;margin-left:6px">PM</span>`) +
+    bar(126, 744, 120, 5, C.ink));
+}
+shot('S1', 178, (lf, f) => {
+  let h = A(`left:0;top:0;width:1920px;height:1080px;background:${C.dark}`);
+  const on = P(lf, 16, 26, E.out);
+  if (lf < 148) {
+    const c = kf(lf, [[0, 1.0], [148, 1.12]], E.out);
+    const scr = A(`left:14px;top:14px;width:332px;height:689px;border-radius:38px;overflow:hidden;background:#fff`,
+      A(`left:0;top:0;width:372px;height:772px;transform-origin:0 0;transform:scale(${PH1.k})`,
+        A(`left:0;top:0;width:372px;height:772px`, googleUI(lf - 178, { noCaret: lf < 140 })) + lockScreen(lf)) +
+      A(`left:0;top:0;width:332px;height:689px;background:#08090B;opacity:${1 - on}`));
+    h += A(`left:0;top:0;width:1920px;height:1080px;transform-origin:960px 540px;transform:scale(${c})`,
+      A(`left:${960 - PH1.w / 2}px;top:${PH1.cy - PH1.h / 2}px;width:${PH1.w}px;height:${PH1.h}px;border-radius:50px;background:${C.slate};border:2px solid #3A414F;transform:rotate(${PH1.rot}deg);box-shadow:0 0 ${170 * on}px ${40 * on}px rgba(246,247,249,${.09 * on}), 0 30px 60px rgba(0,0,0,.45)`, scr));
+  } else {
+    // the screen rectangle expands to become the whole frame
+    const t = P(lf, 148, 177, E.in2), c0 = kf(148, [[0, 1.0], [148, 1.12]], E.out);
+    const k0 = c0 * PH1.k, cy = lerp(540 + (PH1.cy - 540) * c0, 540, t);
+    const w = lerp(372 * k0, 1920 * 1.06, t), hh = lerp(772 * k0, 1080 * 1.06, t), rot = lerp(PH1.rot, 0, t);
+    const k = lerp(k0, D * 1.06, t), bez = 14 * c0 * (1 + t * 2), rad = lerp(38 * c0, 0, t);
+    const vz = (lerp(372 * k0, 2035, P(lf, 148, 177, E.in2)) - lerp(372 * k0, 2035, P(lf - 1, 148, 177, E.in2))) / w;
+    h += A(`left:${960 - w / 2 - bez}px;top:${cy - hh / 2 - bez}px;width:${w + 2 * bez}px;height:${hh + 2 * bez}px;border-radius:${rad + bez}px;background:${C.slate};transform:rotate(${rot}deg)`,
+      A(`left:${bez}px;top:${bez}px;width:${w}px;height:${hh}px;border-radius:${rad}px;overflow:hidden;background:#fff`,
+        A(`left:0;top:0;width:${w / k}px;height:${hh / k}px;transform-origin:0 0;transform:scale(${k});${F(rbl(clamp(vz * 40, 0, 4)))}`,
+          A(`left:${(w / k - 372) / 2}px;top:0;width:372px;height:772px`, googleUI(lf - 178)))));
+  }
+  h += A(`left:0;top:0;width:1920px;height:1080px;background:#000;opacity:${kf(lf, [[0, 1], [18, 0]], E.out)}`);
+  return h;
+});
+
+/* ---------- S2 · Google ---------- */
+const S2_CARD = { x: COLX + 14 * D, y: RES_Y(0) * D, w: 344 * D, h: 62 * D };
+const FULL_OVER = { x: -38.4, y: -21.6, w: 1996.8, h: 1123.2 };
+shot('S2', 240, (lf) => {
+  const c = kf(lf, [[0, 1.06], [16, 1.0]], E.out) * (1 + .03 * P(lf, 16, 239, E.sio));
+  const press = kf(lf, [[150, 0], [156, 1, E.out], [160, 1], [168, 0]], E.back4);
+  const card = { x: 960 + (S2_CARD.x - 960) * c, y: 540 + (S2_CARD.y - 540) * c, w: S2_CARD.w * c, h: S2_CARD.h * c };
+  const expand = P(lf, 204, 239, E.in2);
+  let ui = A(`left:${COLX}px;top:0;width:372px;height:420px;transform-origin:0 0;transform:scale(${D})`, googleUI(lf, { press, skip: i => i === 0 && expand > 0, noCaret: lf > 150 }));
+  let h = A(`left:0;top:0;width:1920px;height:1080px;transform-origin:960px 540px;transform:scale(${c});${F(rbl(kf(lf, [[0, 3], [10, 0]], E.out)))}`, ui);
+  if (expand > 0 || lf >= 196) {
+    // the ad card grows into the project page; its text leaves upward
+    const R = { x: lerp(card.x, FULL_OVER.x, expand), y: lerp(card.y, FULL_OVER.y, expand), w: lerp(card.w, FULL_OVER.w, expand), h: lerp(card.h, FULL_OVER.h, expand) };
+    const up = P(lf, 198, 222, E.in), vu = vel(f => P(f, 198, 222, E.in), lf) * 300;
+    h += A(`left:${R.x}px;top:${R.y}px;width:${R.w}px;height:${R.h}px;border-radius:${lerp(12 * D, 0, expand)}px;background:#fff;border:1px solid rgba(230,232,236,${1 - expand});overflow:hidden`,
+      A(`left:0;top:${-up * 300}px;width:${344}px;height:62px;transform-origin:0 0;transform:scale(${D * c});opacity:${1 - up};${F(mb(0, vu, .25))}`, resultCard(0)));
+  }
+  // his thumb
+  const tx = kf(lf, [[126, 1300], [150, card.x + 560, E.out], [166, card.x + 560], [186, 1420, E.in]]);
+  const ty = kf(lf, [[126, 1260], [150, card.y + 96, E.out], [166, card.y + 96], [186, 1300, E.in]]);
+  if (lf >= 126 && lf <= 186) {
+    const vy = vel(g => kf(g, [[126, 1260], [150, card.y + 96, E.out], [166, card.y + 96], [186, 1300, E.in]]), lf);
+    h += thumb(tx, ty, -16, press, F(mb(vy * .3, vy, .35), 'drop-shadow(0 14px 22px rgba(22,24,29,.2))'));
+  }
+  return h;
+});
+
+/* ---------- S3 · he leaves, Meta brings him back ---------- */
+const DF = 1.5, FEEDX = 960 - 186 * DF;
+const FEED = (() => { const a = igPost('g1'), b = igPost('g2'), ad = igPost('ad'); return { posts: [['g1', 0], ['g2', a.height + 14], ['ad', a.height + b.height + 28]], adY: a.height + b.height + 28 }; })();
+const S3_AD_TOP = 92; // stage y where the ad post comes to rest
+const feedY = lf => kf(lf, [[144, 1120 / DF], [184, S3_AD_TOP / DF - FEED.adY]], E.out); // design units
+const S3_IMG = { x: FEEDX, y: S3_AD_TOP + 44 * DF, w: 372 * DF, h: 372 * DF };
+const leftPanelX = f => kf(f, [[646, -960], [668, 0]], E.out); // global frames, shared by S3 and S4
+function pathTrack(lf) {
+  const t = P(lf, 148, 228, E.io), x0 = 560, x1 = 1360, hx = lerp(x0, x1, t), y = 34;
+  const nodes = [{ x: 560, l: 'Google', c: C.blue }, { x: 827, l: 'Left', c: C.coral }, { x: 1093, l: 'Meta', c: C.blue }, { x: 1360, l: 'Back', c: C.green }];
+  let s = `<svg width="1920" height="80" style="position:absolute;left:0;top:0;overflow:visible"><path d="M${x0} ${y} H${hx}" stroke="${C.grey}" stroke-width="2.5" stroke-dasharray="1 9" stroke-linecap="round"/>`;
+  let lbl = '';
+  nodes.forEach((n, i) => {
+    const p = P(hx, n.x - 1, n.x + 40, E.pop6);
+    if (p <= 0) return;
+    s += `<circle cx="${n.x}" cy="${y}" r="${7 * p}" fill="${n.c}"/>`;
+    lbl += A(`left:${n.x - 80}px;top:${y + 14}px;width:160px;text-align:center;font-size:17px;font-weight:700;color:${n.c === C.coral ? C.coral : C.grey};opacity:${clamp(p)}`, n.l);
+  });
+  s += '</svg>';
+  return s + lbl + (t > 0 && t < 1 ? A(`left:${hx - 15}px;top:${y - 15}px`, avatar(30)) : '');
+}
+shot('S3', 240, (lf, f) => {
+  const c = kf(lf, [[0, 1.04], [14, 1.0]], E.out);
+  let h = '';
+  // the template page: rises in, scrolls twice, back arrow, slides right and greys out
+  const rise = kf(lf, [[0, 140], [18, 0]], E.out);
+  const scrollFn = g => kf(g, [[0, 0], [32, 0], [48, -120], [62, -120], [78, -250]], E.io);
+  const sc = scrollFn(lf), vsc = vel(scrollFn, lf) * D;
+  const slideFn = g => kf(g, [[96, 0], [116, 230, E.out], [146, 262, E.lin]]);
+  const sx = slideFn(lf), vsx = vel(slideFn, lf), grey = P(lf, 98, 116, E.out);
+  if (lf < 200) {
+    h += A(`left:0;top:0;width:1920px;height:1080px;background:${mixHex('#FFFFFF', C.hair, grey)}`);
+    h += A(`left:0;top:0;width:1920px;height:1080px;transform-origin:960px 540px;transform:scale(${c})`,
+      A(`left:${COLX + sx}px;top:${rise}px;width:372px;height:420px;transform-origin:0 0;transform:scale(${D});${F(lf > 96 ? `grayscale(${grey})` : '', mb(vsx, vsc + vel(g => kf(g, [[0, 140], [18, 0]], E.out), lf), .35))}`,
+        A(`left:0;top:${sc}px;width:372px;height:1000px;background:#fff`, dullPage()) +
+        A(`left:0;top:0;width:372px;height:420px;background:${C.hair};opacity:${grey * .78}`)));
+    // back arrow
+    const bp = P(lf, 82, 90, E.pop6), press = kf(lf, [[90, 0], [94, 1], [100, 0]]);
+    if (lf >= 82 && lf < 112) h += A(`left:${COLX + 14 * D + sx}px;top:${8 * D}px;width:${32 * D}px;height:${32 * D}px;border-radius:${16 * D}px;background:${mixHex('#FFFFFF', C.hair, press)};border:1px solid ${C.hair};box-shadow:0 6px 16px -8px rgba(22,24,29,.3);display:flex;align-items:center;justify-content:center;transform:scale(${bp * (1 - press * .1)})`, ICON.back(40));
+  }
+  // the feed scrolls past and stops on the same project, as an ad
+  if (lf >= 144) {
+    const fy = feedY(lf), vf = vel(feedY, lf) * DF;
+    const out = P(lf, 224, 239, E.in), vo = vel(g => P(g, 224, 239, E.in), lf) * 700;
+    h += A(`left:0;top:${fy * DF - 40 + out * 700}px;width:1920px;height:${3000}px;background:#fff;${F(mb(0, vo, .3))}`);
+    const tap = kf(lf, [[206, 0], [210, 1], [216, 0]]);
+    let feed = '';
+    FEED.posts.forEach(([k, y]) => {
+      const p = igPost(k, { press: k === 'ad' ? tap : 0, hideArt: k === 'ad' && lf >= 222 });
+      if (k === 'ad' && lf >= 222) return;
+      feed += A(`left:0;top:${y}px;width:372px;height:${p.height}px`, p.html);
+    });
+    h += A(`left:${FEEDX}px;top:${fy * DF + out * 700}px;width:372px;height:2000px;transform-origin:0 0;transform:scale(${DF});${F(mb(0, vf + vo, .3))}`, feed);
+  }
+  if (lf >= 146 && lf < 232) h += A(`left:0;top:0;width:1920px;height:120px;opacity:${1 - P(lf, 222, 232)}`, pathTrack(lf));
+  // the ad card expands into the landing page (right half)
+  if (lf >= 222) {
+    const t = P(lf, 222, 239, E.in2);
+    const R = { x: lerp(FEEDX, 960, t), y: lerp(S3_AD_TOP, -20, t), w: lerp(372 * DF, 980, t), h: lerp(504 * DF, 1120, t) };
+    const art = P(lf, 222, 236, E.in), va = vel(g => P(g, 222, 236, E.in), lf) * 500;
+    h += A(`left:${R.x}px;top:${R.y}px;width:${R.w}px;height:${R.h}px;background:#fff;border-radius:${lerp(8, 0, t)}px;overflow:hidden`,
+      A(`left:${(R.w - S3_IMG.w) / 2}px;top:${44 * DF - art * 500}px;width:${S3_IMG.w}px;height:${S3_IMG.h}px;${F(mb(0, va, .3))}`, towerArt(S3_IMG.w, S3_IMG.h)));
+  }
+  if (f >= 646) h += A(`left:${leftPanelX(f)}px;top:0;width:960px;height:1080px;background:${C.panel};${F(mb(vel(leftPanelX, f), 0, .3))}`);
+  // thumb taps the ad
+  if (lf >= 192 && lf <= 230) {
+    const tipY = g => kf(g, [[192, 1260], [206, S3_IMG.y + 330, E.out], [214, S3_IMG.y + 330], [230, 1300, E.in]]);
+    h += thumb(1080, tipY(lf), -14, kf(lf, [[206, 0], [210, 1], [216, 0]]), F(mb(0, vel(tipY, lf), .35), 'drop-shadow(0 14px 22px rgba(22,24,29,.2))'));
+  }
+  return h;
+});
+
+/* ---------- S4 · the landing page ---------- */
+const PG = { y: 44, w: 372, h: 772 };
+const PH_CY = PG.y + PG.h / 2; // 430
+function crumple(c, seed = 3) { // clip polygon for a page crumpling toward its centre
+  const pts = [], N = 28;
+  for (let i = 0; i < N; i++) {
+    const a = i / N, side = Math.floor(a * 4), u = (a * 4) % 1;
+    let x, y;
+    if (side === 0) { x = u * 100; y = 0; } else if (side === 1) { x = 100; y = u * 100; } else if (side === 2) { x = 100 - u * 100; y = 100; } else { x = 0; y = 100 - u * 100; }
+    const k = 1 - c * (.25 + .35 * hash(i + seed));
+    pts.push(`${(50 + (x - 50) * k).toFixed(2)}% ${(50 + (y - 50) * k).toFixed(2)}%`);
+  }
+  return `polygon(${pts.join(',')})`;
+}
+const btnStage = (cam) => { // stage rect of the WhatsApp button with the phone centred at 960 and camera scale cam about (960, PH_CY)
+  const x = 960 - 186 + BTN.x, y = PG.y + PG.h - 70 + BTN.y;
+  return { x: 960 + (x - 960) * cam, y: PH_CY + (y - PH_CY) * cam, w: BTN.w * cam, h: BTN.h * cam };
+};
+const s4Cam = lf => kf(lf, [[88, 1], [224, 1.05]], E.sio);
+const headerRect = f => { // global: button → chat header, shared by S4 and S5
+  const b = btnStage(s4Cam(230)), t = P(f, 888, 964, E.io);
+  return { x: lerp(b.x, CH.x, t), y: lerp(b.y, CH.y, t), w: lerp(b.w, CH.w, t), h: lerp(b.h, CH.head, t), t };
+};
+function headerBar(f, inner = '') {
+  const R = headerRect(f), r = lerp(23, 28, R.t), rb = lerp(23, 0, R.t);
+  const v = Math.hypot(vel(g => headerRect(g).x, f), vel(g => headerRect(g).y, f));
+  return A(`left:${R.x}px;top:${R.y}px;width:${R.w}px;height:${R.h}px;border-radius:${r}px ${r}px ${rb}px ${rb}px;background:${C.green};overflow:hidden;${F(rbl(Math.min(3, v * .04)))}`, inner);
+}
+shot('S4', 300, (lf, f) => {
+  let h = A(`left:0;top:0;width:1920px;height:1080px;background:#fff`);
+  // right half: the real page builds itself
+  const rpx = kf(lf, [[46, 960], [66, 0]], E.io), pageCx = kf(lf, [[46, 1440], [66, 960]], E.io);
+  const vcx = vel(g => kf(g, [[46, 1440], [66, 960]], E.io), lf);
+  const cam = s4Cam(lf);
+  const tilt = P(lf, 226, 282, E.in), vt = vel(g => P(g, 226, 282, E.in), lf);
+  const bez = 14 * P(lf, 60, 74, E.out);
+  const sticky = kf(lf, [[76, 70], [90, 0]], E.pop6);
+  const flash = kf(lf, [[214, 0], [217, 1], [226, 0]]);
+  let screen = A(`left:0;top:0;width:${PG.w}px;height:${PG.h}px`, realPage(lf, { start: 2 }));
+  if (lf >= 76) screen += A(`left:0;top:${PG.h - 70 + sticky}px;width:${PG.w}px;height:70px`, stickyBar({ flash, hideBtn: lf >= 230 }));
+  const phone = A(`left:${pageCx - 186 - bez}px;top:${PG.y - bez}px;width:${PG.w + 2 * bez}px;height:${PG.h + 2 * bez}px;border-radius:${36 + bez}px;background:${bez > .5 ? C.slate : 'transparent'}`,
+    A(`left:${bez}px;top:${bez}px;width:${PG.w}px;height:${PG.h}px;border-radius:36px;overflow:hidden;background:#fff;border:${bez > .5 ? 0 : 1}px solid ${C.hair};${lf < 20 ? `transform:translateY(${kf(lf, [[0, 80], [14, 0]], E.out)}px)` : ''}`, screen));
+  h += A(`left:${rpx}px;top:0;width:${1920 - rpx}px;height:1080px;background:#fff`);
+  h += A(`left:0;top:0;width:1920px;height:1080px;transform-origin:960px ${PH_CY}px;transform:perspective(1800px) scale(${cam * (1 - tilt * .12)}) translateY(${tilt * 760}px) rotateX(${tilt * 40}deg) rotateZ(${-tilt * 5}deg);${F(mb(vcx, vt * 760, .35))}`, phone);
+  // left half: the grey template crumples, falls, and the half closes like a door
+  if (lf < 66) {
+    const door = P(lf, 44, 64, E.in);
+    const crum = P(lf, 12, 34, E.io), fall = P(lf, 28, 52, E.in), vfall = vel(g => P(g, 28, 52, E.in), lf) * 1100;
+    let creases = '';
+    for (let i = 0; i < 7; i++) {
+      const a = hash(i + 20) * 180, len = 140 + hash(i + 30) * 260;
+      creases += A(`left:${186 - len / 2}px;top:${150 + hash(i + 40) * 480}px;width:${len}px;height:2px;background:${C.mute2};opacity:${crum * .7};transform:rotate(${a}deg)`);
+    }
+    const sheet = fall >= 1 ? '' : A(`left:${480 - 186}px;top:${PG.y + fall * 1100}px;width:${PG.w}px;height:${PG.h}px;transform:rotate(${-crum * 16 - fall * 30}deg) scale(${1 - crum * .5});clip-path:${crumple(crum)};${F(`brightness(${1 - crum * .08})`, mb(0, vfall, .3))}`,
+      A(`left:0;top:0;width:${PG.w}px;height:${PG.h}px;background:#fff;border:1px solid ${C.hair};border-radius:36px;overflow:hidden`, dullPage()) + creases);
+    h += A(`left:${leftPanelX(f)}px;top:0;width:960px;height:1080px;transform-origin:0 50%;transform:perspective(2200px) rotateY(${door * 88}deg);background:${C.panel};${F(mb(vel(leftPanelX, f), 0, .3))}`, sheet);
+  }
+  // his thumb presses WhatsApp
+  const b = btnStage(cam);
+  if (lf >= 190 && lf <= 234) {
+    const ty = g => kf(g, [[190, 1240], [212, b.y + 26, E.out], [218, b.y + 26], [234, 1300, E.in]]);
+    h += thumb(b.x + 150, ty(lf), -12, kf(lf, [[212, 0], [215, 1], [220, 0]]), F(mb(0, vel(ty, lf), .35), 'drop-shadow(0 14px 22px rgba(22,24,29,.2))'));
+  }
+  // the green button lifts off the page and grows into the chat's header bar
+  if (lf >= 230) {
+    const lab = P(f, 888, 912, E.in);
+    h += headerBar(f, A(`left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:${15 * cam}px;font-weight:700;transform:translateY(${-lab * 40}px);opacity:${1 - lab}`, ICON.chat(17 * cam) + 'WhatsApp'));
+  }
+  return h;
+});
+
+/* ---------- S5 · the WhatsApp AI ---------- */
+function typingBubble(who, T) {
+  const dots = [0, 1, 2].map(i => `<span style="display:inline-block;width:11px;height:11px;border-radius:6px;background:${C.mute2};margin:0 3px;transform:translateY(${-Math.max(0, Math.sin((T * .35) - i * .9)) * 6}px)"></span>`).join('');
+  return `<div class="a" style="${who === 'us' ? 'right' : 'left'}:0;top:0;width:96px;height:${TYPING_H}px;border-radius:22px;background:${who === 'us' ? C.greenTint : '#fff'};${who === 'us' ? '' : `border:1px solid ${C.hair};`}display:flex;align-items:center;justify-content:center">${dots}</div>`;
+}
+function chatThread(T, o = {}) {
+  const L = threadLayout(T), sc = chatScroll(T);
+  let h = '';
+  MSGS.forEach((m, i) => {
+    const sl = L.slots[i];
+    if (!sl.h) return;
+    const y = THREAD.pad + sl.y - sc;
+    if (y > THREAD.h + 40 || y + sl.h < -40) return;
+    if (T < m.t) { h += A(`left:0;top:${y}px;width:${THREAD.w}px;height:${TYPING_H}px`, typingBubble(m.who, T)); return; }
+    if (m.who === 'sys') {
+      const s = P(T, m.t, m.t + 14, E.out), vs = vel(g => P(g, m.t, m.t + 14, E.out), T) * 520;
+      h += A(`left:0;top:${y}px;width:${THREAD.w}px;height:56px;display:flex;justify-content:center;transform:translateX(${(1 - s) * 520}px);${F(mb(vs, 0, .3))}`,
+        `<div style="height:56px;padding:0 26px;border-radius:28px;background:${C.green};color:#fff;display:flex;align-items:center;gap:10px;font-size:23px;font-weight:700">${ICON.person(24)}Handed to a human</div>`);
+      return;
+    }
+    const sz = MSZ[i], us = m.who === 'us';
+    const pop = kf(T, [[m.t, .82], [m.t + 2, 1.06, E.out], [m.t + 3, 1]], E.out);
+    const blue = us ? P(T, m.t + 8, m.t + 10) : 0;
+    const hideTick = o.hideLastTick && i === LAST_US;
+    h += A(`left:${us ? THREAD.w - sz.w : 0}px;top:${y}px;width:${sz.w}px;height:${sz.h}px;transform-origin:${us ? 'right' : 'left'} bottom;transform:scale(${pop})`,
+      bubbleBox(m, sz.w, sz.h, hideTick ? -1 : blue).replace(hideTick ? /<svg width="22"[\s\S]*?<\/svg>/ : /$^/, '<span style="display:inline-block;width:22px"></span>'));
+    if (m.sub) h += A(`left:6px;top:${y + sz.h + 4}px;font-size:18px;color:${C.grey};white-space:nowrap`, m.sub);
+  });
+  return h;
+}
+function timerChip(T, lf) {
+  if (T < 20) return '';
+  const sec = clamp(Math.floor((T - 24) * 9 / 60), 0, 9), done = T >= 84;
+  const p = kf(lf, [[20, .7], [24, 1.06, E.out], [26, 1]], E.out);
+  const pulse = done ? kf(lf, [[84, 1], [88, 1.08, E.out], [112, 1.08], [120, 1]], E.io) : 1;
+  return A(`left:1500px;top:${CH.y}px;width:320px;height:${CH.head}px;border-radius:24px;background:#fff;border:${done ? 2 : 1}px solid ${done ? C.green : C.hair};transform:scale(${p * pulse});transform-origin:center`,
+    A(`left:24px;top:30px`, ICON.clock(42, done ? C.green : C.ink)) +
+    A(`left:84px;top:14px;font-size:17px;font-weight:700;color:${C.grey};letter-spacing:1px`, 'REPLY TIME') +
+    A(`left:84px;top:34px;font-size:50px;font-weight:700;line-height:60px;color:${done ? C.green : C.ink}`, `0:0${sec}`));
+}
+function chatScene(lf, f, o = {}) {
+  const T = s5T(lf);
+  const body = kf(lf, [[0, 0], [18, CH.bodyH]], E.out);
+  let h = '';
+  h += A(`left:${CH.x}px;top:${CH.y + CH.head}px;width:${CH.w}px;height:${body}px;background:${C.panel};border:1px solid ${C.hair};border-top:0;border-radius:0 0 28px 28px;overflow:hidden`,
+    A(`left:${THREAD.x - CH.x}px;top:0;width:${THREAD.w}px;height:${CH.bodyH}px`, chatThread(T, o)));
+  const hi = P(lf, 4, 16, E.out);
+  h += headerBar(f, A(`left:24px;top:${20 + (1 - hi) * 20}px;opacity:${hi}`, avatar(64, 'buyer', '#FFFFFF')) +
+    A(`left:106px;top:${22 + (1 - hi) * 20}px;color:#fff;font-size:29px;font-weight:700;opacity:${hi}`, BUYER) +
+    A(`left:106px;top:${60 + (1 - hi) * 20}px;color:#fff;font-size:18px;opacity:${hi * .85}`, `WhatsApp · ${PROJECT} enquiry`));
+  h += timerChip(T, lf);
+  return h;
+}
+const s5Cam = T => 1 + .03 * P(T, 20, 520, E.sio); // slow push; runs on remapped time, so it freezes with the 0:09 hold
+shot('S5', 540, (lf, f) => {
+  const T = s5T(lf);
+  const drop = P(lf, 486, 539, E.in), vd = vel(g => P(g, 486, 539, E.in), lf) * 1150;
+  const detach = lf >= 476;
+  const cam = s5Cam(T);
+  let h = A(`left:0;top:${drop * 1150}px;width:1920px;height:1080px;${F(mb(0, vd, .3))}`,
+    A(`left:0;top:0;width:1920px;height:1080px;transform-origin:960px 450px;transform:scale(${cam})`, chatScene(lf, f, { hideLastTick: detach })));
+  if (detach) {
+    const q = lastTickPos(T), p0 = { x: 960 + (q.x - 960) * cam, y: 450 + (q.y - 450) * cam }, t = P(lf, 476, 539, E.io), s = lerp(1, 12, P(lf, 476, 539, E.in2));
+    const x = lerp(p0.x, 960, t), y = lerp(p0.y, 470, t);
+    h += A(`left:${x - 11}px;top:${y - 6.5}px;width:22px;height:13px;transform-origin:center;transform:scale(${s})`, tick2(22, C.blue));
+  }
+  return h;
+});
+
+/* ---------- S6 · saved automatically (behind SHOW_SHEET) ---------- */
+const CELL_T = [32, 40, 47, 55, 62]; // eighth notes against the 120 BPM grid
+function rowWriteState(lf) {
+  const chars = RAHUL.map((v, i) => Math.floor(clamp((lf - CELL_T[i]) / 5) * v.length + (lf >= CELL_T[i] + 5 ? 1e3 : 0)));
+  const land = RAHUL.map((v, i) => kf(lf, [[CELL_T[i] + 4, 1], [CELL_T[i] + 6, 1.05, E.out], [CELL_T[i] + 9, 1]], E.out));
+  return { chars, land };
+}
+function selBox(lf) {
+  let i = 0; for (let k = 0; k < 5; k++) if (lf >= CELL_T[k] - 4) i = k;
+  const prev = Math.max(0, i - 1), t = P(lf, CELL_T[i] - 4, CELL_T[i], E.out);
+  const x = lerp(COLS[prev].x, COLS[i].x, i === 0 ? 1 : t), w = lerp(COLS[prev].w, COLS[i].w, i === 0 ? 1 : t);
+  const vis = lf >= CELL_T[0] - 6 && lf < CELL_T[4] + 14;
+  return vis ? A(`left:${x}px;top:0;width:${w}px;height:${SH.row}px;border:2.5px solid ${C.blue};border-radius:3px`) : '';
+}
+function sheetRowAbs(lf, o = {}) { // Rahul's row, absolutely placed (the row that never moves into S7)
+  const st = rowWriteState(lf);
+  return A(`left:0;top:0;width:${SH.w}px;height:${SH.row}px;background:${o.bg || 'transparent'}`,
+    sheetCells(RAHUL, { chars: st.chars, land: st.land }) + selBox(lf));
+}
+shot('S6', 180, (lf) => {
+  const enter = kf(lf, [[0, 700], [22, 0]], E.out), ve = vel(g => kf(g, [[0, 700], [22, 0]], E.out), lf);
+  const exit = P(lf, 152, 179, E.in), vx = vel(g => P(g, 152, 179, E.in), lf) * 900;
+  const breath = 10 * Math.sin(Math.PI * P(lf, 70, 150, E.sio)); // back to rest before the row hands over to S7
+  const oy = enter + exit * 900 - breath;
+  let h = A(`left:${SH.x}px;top:${SH.y + oy}px;width:${SH.w}px;height:640px;${F(mb(0, ve + vx, .3))}`, sheetPanel());
+  const saved = P(lf, 66, 76, E.out);
+  const rowY = SH.y + rowTop(NEW_ROW) + enter - breath;
+  h += A(`left:${SH.x}px;top:${rowY}px;width:${SH.w}px;height:${SH.row}px;${F(mb(0, ve, .3))}`,
+    sheetRowAbs(lf, { bg: mixHex('#FFFFFF', C.greenTint, saved * (1 - exit)) }) + (lf >= 28 ? '' : ''));
+  // the tick from the chat lands in the status cell
+  const target = { x: SH.x + COLS[4].x + 16 + 13, y: rowY + SH.row / 2 };
+  const t = P(lf, 0, 28, E.out), s = lerp(12, 26 / 22, t);
+  h += A(`left:${lerp(960, target.x, t) - 11}px;top:${lerp(470, target.y, t) - 6.5}px;width:22px;height:13px;transform-origin:center;transform:scale(${s})`, tick2(22, C.blue));
+  return h;
+});
+
+/* ---------- S7 · the dashboard ---------- */
+const ROW_STAGE = { x: SH.x, y: SH.y + rowTop(NEW_ROW) };   // 410, 502 — where the row sits at the cut
+const GRAB = { x: DB.listX + 140, y: DB.listY + 40 };
+const SNEHA_SLOT = { x: 1560 + 36, y: 170 + 30 + 36 };
+const STATUS_BTN = { x: 1100, y: 214, w: 320, h: 60 };
+const DOT = { x: STATUS_BTN.x + 30, y: STATUS_BTN.y + 30 };
+const MENU = ['New', 'Contacted', 'Site visit scheduled', 'Booking done'];
+function herScreen(lf, f) {
+  const amber = P(lf, 322, 332), green = P(lf, 420, 430);
+  const stripe = green > 0 ? mixHex(AMBER, C.green, green) : mixHex(C.hair, AMBER, amber);
+  const status = lf >= 420 ? 'Booking done' : lf >= 322 ? 'Site visit scheduled' : 'New';
+  const dotC = lf >= 420 ? C.green : lf >= 322 ? AMBER : C.mute2;
+  let h = '';
+  h += A(`left:60px;top:44px`, avatar(56, 'sneha')) + A(`left:132px;top:46px;font-size:26px;font-weight:700`, `${SALES} — Sales`) + A(`left:132px;top:80px;font-size:18px;color:${C.grey}`, 'My leads');
+  h += counterCard(lf >= 428 ? 12 : 11, { roll: P(lf, 428, 442), flash: kf(lf, [[428, 0], [434, 1], [470, 0]]) });
+  let card = A(`left:0;top:0;width:14px;height:100%;background:${stripe}`);
+  card += A(`left:52px;top:44px`, avatar(96)) + A(`left:170px;top:48px;font-size:44px;font-weight:700;letter-spacing:-1px`, BUYER) + A(`left:170px;top:106px;font-size:25px;color:${C.grey}`, PHONE);
+  card += A(`left:52px;top:176px;width:900px;height:1px;background:${C.hair}`);
+  const rows = [['Project', PROJECT], ['Source', null], ['Reply time', '9 sec'], ['Asked for', 'Site visit — Sat 11 AM']];
+  rows.forEach(([k, v], i) => {
+    card += A(`left:52px;top:${206 + i * 64}px;font-size:21px;color:${C.grey};line-height:40px`, k);
+    card += v ? A(`left:260px;top:${206 + i * 64}px;font-size:24px;font-weight:500;line-height:40px`, v)
+              : A(`left:260px;top:${211 + i * 64}px;height:30px;line-height:30px;padding:0 12px;border-radius:15px;background:${C.blue};color:#fff;font-size:16px;font-weight:700`, 'WhatsApp');
+  });
+  h += A(`left:460px;top:170px;width:1000px;height:480px;border-radius:24px;background:#fff;border:1px solid ${C.hair};overflow:hidden;box-shadow:0 24px 50px -36px rgba(22,24,29,.4)`, card);
+  // status control
+  const press = kf(lf, [[290, 0], [293, 1], [298, 0]]) + kf(lf, [[392, 0], [395, 1], [400, 0]]);
+  h += A(`left:${STATUS_BTN.x}px;top:${STATUS_BTN.y}px;width:${STATUS_BTN.w}px;height:${STATUS_BTN.h}px;border-radius:30px;background:#fff;border:1.5px solid ${lf >= 322 ? stripe : C.hair};transform:scale(${1 - press * .03})`,
+    A(`left:22px;top:22px;width:16px;height:16px;border-radius:8px;background:${dotC};${lf >= 470 ? 'opacity:0' : ''}`) +
+    A(`left:52px;top:0;line-height:57px;font-size:21px;font-weight:700;white-space:nowrap`, status) + A(`right:18px;top:17px`, ICON.chev(24)));
+  // dropdown
+  const open = Math.max(kf(lf, [[292, 0], [304, 1, E.out], [322, 1], [330, 0, E.in]]), kf(lf, [[394, 0], [404, 1, E.out], [420, 1], [428, 0, E.in]]));
+  if (open > 0) {
+    const hoverIdx = lf < 360 ? (lf >= 310 ? 2 : -1) : (lf >= 410 ? 3 : -1);
+    let menu = '';
+    MENU.forEach((m, i) => {
+      const it = clamp(open * 1.6 - i * .2);
+      menu += A(`left:8px;top:${8 + i * 56}px;width:${STATUS_BTN.w - 16}px;height:52px;border-radius:12px;background:${i === hoverIdx ? C.panel : '#fff'};padding-left:16px;line-height:52px;font-size:20px;font-weight:${i === hoverIdx ? 700 : 500};opacity:${it};transform:translateY(${(1 - it) * -8}px)`, m);
+    });
+    h += A(`left:${STATUS_BTN.x}px;top:${STATUS_BTN.y + 70}px;width:${STATUS_BTN.w}px;height:${(8 + 56 * 4 + 8) * E.out(open)}px;border-radius:18px;background:#fff;border:1px solid ${C.hair};box-shadow:0 20px 40px -20px rgba(22,24,29,.35);overflow:hidden`, menu);
+  }
+  // Saturday — a short time jump
+  if (lf >= 340 && lf <= 382) {
+    const xf = g => kf(g, [[340, -420], [356, 960, E.out], [366, 960], [382, 2340, E.in]]);
+    const x = xf(lf);
+    h += A(`left:${x - 170}px;top:740px;width:340px;height:84px;border-radius:42px;background:${C.ink};color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-size:34px;font-weight:700;${F(mb(vel(xf, lf), 0, .1, 8))}`, ICON.cal(30, '#fff') + 'Saturday');
+  }
+  // cursor
+  const cxf = g => kf(g, [[262, 1500], [288, STATUS_BTN.x + 160], [306, STATUS_BTN.x + 160], [314, STATUS_BTN.x + 130], [340, STATUS_BTN.x + 120], [388, STATUS_BTN.x + 170], [406, STATUS_BTN.x + 150], [470, 1640]]);
+  const cyf = g => kf(g, [[262, 1000], [288, STATUS_BTN.y + 34], [306, STATUS_BTN.y + 34], [314, STATUS_BTN.y + 70 + 8 + 2 * 56 + 26], [340, 620], [388, STATUS_BTN.y + 34], [406, STATUS_BTN.y + 34], [414, STATUS_BTN.y + 70 + 8 + 3 * 56 + 26], [470, 1100, E.in]]);
+  if (lf < 470) {
+    const cl = kf(lf, [[290, 1], [293, .88], [298, 1]]) * kf(lf, [[318, 1], [321, .88], [326, 1]]) * kf(lf, [[392, 1], [395, .88], [400, 1]]) * kf(lf, [[416, 1], [419, .88], [424, 1]]);
+    h += cursor(cxf(lf), cyf(lf), cl, F(cmb(vel(cxf, lf), vel(cyf, lf))));
+  }
+  return h;
+}
+shot('S7', 540, (lf, f) => {
+  let h = '';
+  if (lf < 262) {
+    const zoom = P(lf, 242, 261, E.in);
+    const chromeT = P(lf, 0, 24);
+    // the row becomes a card, lifts, and lands at the top of the list
+    const morph = P(lf, 18, 40, E.io);
+    const cardYf = g => kf(g, [[40, ROW_STAGE.y - (DB.cardH - SH.row) / 2], [70, DB.listY, E.io], [74, DB.listY + 4], [78, DB.listY]]);
+    const morphY = lerp(ROW_STAGE.y, ROW_STAGE.y - (DB.cardH - SH.row) / 2, E.io(morph));
+    const cy = lf < 40 ? morphY : cardYf(lf);
+    const shift = P(lf, 46, 70, E.io) * DB.pitch;
+    let dash = A(`left:0;top:0;width:1920px;height:1080px;background:#fff`);
+    dash += dashChrome(chromeT, { teamHL: kf(lf, [[186, 0], [196, 1], [206, 1], [220, 0]]), count: 11 });
+    for (let k = 0; k < 3; k++) dash += A(`left:${DB.listX}px;top:${DB.listY + k * DB.pitch + shift + (1 - E.out(chromeT)) * 500}px;width:${DB.w}px;height:${DB.cardH}px`, skeletonCard(k));
+    const lift = kf(lf, [[40, 0], [50, 1], [66, 1], [74, 0]]) + kf(lf, [[152, 0], [158, .6], [200, .6], [208, 0]]);
+    const assign = lf >= 204 ? kf(lf, [[204, 0], [214, 1]], E.back) : 0;
+    const vy = vel(g => (g < 40 ? morphY : cardYf(g)), lf);
+    dash += A(`left:${ROW_STAGE.x}px;top:${cy}px;width:${DB.w}px;height:${DB.cardH}px;transform:scale(${1 + lift * .015});${F(mb(0, lf > 40 ? vy : 0, .35))}`, leadCard(morph, { lift, assign }));
+    // drag: a ghost chip follows the cursor onto Sneha
+    const gx = g => kf(g, [[156, GRAB.x], [196, SNEHA_SLOT.x + 70]], E.io), gy = g => kf(g, [[156, GRAB.y], [176, GRAB.y - 60], [196, SNEHA_SLOT.y]], E.io);
+    if (lf >= 154 && lf < 208) {
+      const gs = kf(lf, [[154, .6], [160, 1, E.out], [196, 1], [206, .3, E.in]]);
+      dash += A(`left:${gx(lf) - 20}px;top:${gy(lf) - 26}px;height:52px;padding:0 20px 0 6px;border-radius:26px;background:#fff;border:1px solid ${C.hair};box-shadow:0 14px 30px -12px rgba(22,24,29,.35);display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;white-space:nowrap;transform-origin:20px 26px;transform:scale(${gs});${F(mb(vel(gx, lf), vel(gy, lf), .1, 4))}`, avatar(40) + BUYER);
+    }
+    const cxf = g => kf(g, [[110, 1640], [146, GRAB.x + 10, E.out], [156, GRAB.x + 10], [196, SNEHA_SLOT.x + 80, E.io], [204, SNEHA_SLOT.x + 80], [240, 1500, E.in]]);
+    const cyf = g => kf(g, [[110, 1100], [146, GRAB.y + 6, E.out], [156, GRAB.y + 6], [176, GRAB.y - 54], [196, SNEHA_SLOT.y + 6], [204, SNEHA_SLOT.y + 6], [240, 1120, E.in]]);
+    if (lf >= 110 && lf < 240) dash += cursor(cxf(lf), cyf(lf), kf(lf, [[150, 1], [154, .88], [198, .88], [202, 1]]), F(cmb(vel(cxf, lf), vel(cyf, lf))));
+    const cardCx = DB.listX + DB.w / 2, cardCy = DB.listY + DB.cardH / 2;
+    h += A(`left:0;top:0;width:1920px;height:1080px;transform-origin:${cardCx}px ${cardCy}px;transform:scale(${1 + zoom * 2.2});${F(rbl(zoom * 12))}`, dash);
+  } else {
+    // her screen, then a push into the green dot
+    const enter = P(lf, 262, 280, E.out);
+    const ex = P(lf, 470, 539, E.in);
+    const s = (1.25 - .25 * enter) * (1 + ex * 7);
+    const tx = (960 - DOT.x) * ex, ty = (540 - DOT.y) * ex;
+    h += A(`left:0;top:0;width:1920px;height:1080px;background:#fff`);
+    h += A(`left:0;top:0;width:1920px;height:1080px;transform-origin:${DOT.x}px ${DOT.y}px;transform:translate(${tx}px,${ty}px) scale(${s});${F(rbl((1 - enter) * 8 + ex * 14))}`, herScreen(lf, f));
+    if (lf >= 470) {
+      const d = lerp(16, 6, ex), x = lerp(DOT.x, 960, ex), y = lerp(DOT.y, 540, ex);
+      h += A(`left:${x - d / 2}px;top:${y - d / 2}px;width:${d}px;height:${d}px;border-radius:50%;background:${C.green};box-shadow:0 0 ${18 * ex}px ${6 * ex}px rgba(18,164,113,.5)`);
+    }
+  }
+  return h;
+});
+
+/* ---------- S8 · AI calling (the one dark shot) ---------- */
+const COLD = { x: 300, w: 760, top: 200, pitch: 84, hot: 4 };
+const AGENT_LINE = `Namaskar, you had enquired about ${PROJECT}. Still looking?`;
+const LEAD_LINE = 'Haan, budget 80 lakh.';
+const WAVE = { n: 38, bw: 8, gap: 4 };
+function speaking(lf) { return Math.max(P(lf, 118, 124) * (1 - P(lf, 194, 200)), P(lf, 210, 214) * (1 - P(lf, 238, 244)), .18 * P(lf, 250, 256) * (1 - P(lf, 322, 338))); }
+function waveform(lf, w, flat = 0, color = C.green) {
+  const n = WAVE.n, pitch = w / n, env = speaking(lf) * (1 - flat), lead = lf >= 206 && lf < 246;
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const shape = Math.sin(Math.PI * (i + .5) / n) * .8 + .2;
+    const a = env * shape * (.35 + .65 * Math.abs(Math.sin(lf * .45 + i * .8 + hash(i) * 6)) * (.6 + .4 * Math.abs(Math.sin(lf * .21 + i * 1.7))));
+    const hh = 3 + a * 84, bw = lerp(WAVE.bw * w / 456, pitch + .5, flat);
+    s += `<rect x="${i * pitch + (pitch - bw) / 2}" y="${-hh / 2}" width="${bw}" height="${hh}" rx="${Math.min(bw, hh) / 2 * (1 - flat)}" fill="${flat > .5 ? mixHex(lead ? '#E6E8EC' : color, C.hair, flat) : (lead ? '#E6E8EC' : color)}"/>`;
+  }
+  return `<svg width="${w}" height="100" viewBox="0 -50 ${w} 100" style="display:block;overflow:visible">${s}</svg>`;
+}
+function coldRow(k, o = {}) {
+  const hot = o.hot || 0, green = o.green || 0;
+  const bg = green > 0 ? mixHex('#22262E', C.green, green) : mixHex(C.dark, '#22262E', hot);
+  let h = A(`left:30px;top:22px;width:40px;height:40px;border-radius:20px;background:${green > .5 ? 'rgba(255,255,255,.25)' : C.darkLine}`);
+  if (hot > 0) {
+    h += A(`left:92px;top:14px;font-size:22px;font-weight:700;color:#fff;opacity:${hot};white-space:nowrap`, `${PROJECT} enquiry`) +
+      A(`left:92px;top:44px;font-size:16px;color:${green > .5 ? '#E3F5EC' : C.mute2};opacity:${hot}`, green > .5 ? 'Called just now' : 'Never called back');
+  } else h += bar(92, 26, 170 + hash(k) * 120, 10, C.darkLine) + bar(92, 46, 90 + hash(k + 50) * 60, 8, '#23262D');
+  const tag = green > .5 ? 'Budget 80 lakh' : hot > 0 ? 'Calling…' : 'Not called';
+  h += A(`right:24px;top:24px;height:36px;line-height:36px;padding:0 16px;border-radius:18px;background:${green > .5 ? 'rgba(255,255,255,.18)' : (hot > 0 ? 'rgba(18,164,113,.16)' : C.darkLine)};color:${green > .5 ? '#fff' : (hot > 0 ? C.green : C.grey)};font-size:16px;font-weight:700;white-space:nowrap`, tag);
+  return A(`left:0;top:0;width:${COLD.w}px;height:${COLD.pitch - 8}px;border-radius:16px;background:${bg};border:1px solid ${hot > 0 ? mixHex(C.dark, '#3A414F', hot) : C.dark}`, h);
+}
+const MINI = 0.5;
+const SHEET_MINI = { x: 150, y: 96 }, DASH_MINI = { x: 1180, y: 96 };
+function dashMini(lf) { // the same dashboard list, scaled
+  const land = P(lf, 296, 318, E.io);
+  let h = A(`left:0;top:0;width:${DB.w + 80}px;height:${720}px;background:#fff;border-radius:28px`);
+  h += A(`left:40px;top:34px;font-size:40px;font-weight:700;letter-spacing:-1px`, 'Leads') + A(`left:40px;top:100px;font-size:16px;font-weight:700;color:${C.grey};letter-spacing:1.5px`, 'NEW LEADS');
+  const shift = land * DB.pitch;
+  h += A(`left:40px;top:${136 + shift}px;width:${DB.w}px;height:${DB.cardH}px`, leadCard(1, { assign: 1 }));
+  for (let k = 0; k < 4; k++) h += A(`left:40px;top:${136 + (k + 1) * DB.pitch + shift}px;width:${DB.w}px;height:${DB.cardH}px`, skeletonCard(k));
+  return h;
+}
+function oldCard() {
+  return A(`left:0;top:0;width:${DB.w}px;height:${DB.cardH}px;border-radius:16px;background:#fff;border:1px solid ${C.hair};box-shadow:0 8px 20px -14px rgba(22,24,29,.22)`,
+    A(`left:24px;top:20px;width:44px;height:44px;border-radius:22px;background:${C.panel}`) +
+    A(`left:84px;top:14px;font-size:23px;font-weight:700`, OLD[0]) + A(`left:84px;top:44px;font-size:17px;color:${C.grey}`, OLD[1]) +
+    A(`left:320px;top:27px;font-size:20px;font-weight:500`, PROJECT) +
+    A(`left:574px;top:27px;height:30px;line-height:30px;padding:0 12px;border-radius:15px;background:${C.blue};color:#fff;font-size:16px;font-weight:700`, 'AI call') +
+    A(`left:820px;top:27px;font-size:18px;color:${C.grey}`, OLD[4]));
+}
+shot('S8', 360, (lf, f) => {
+  let h = A(`left:0;top:0;width:1920px;height:1080px;background:${C.dark}`);
+  const listY = g => kf(g, [[0, 980], [84, 0]], E.out);
+  const away = P(lf, 252, 280, E.in), va = vel(g => P(g, 252, 280, E.in), lf) * 1400;
+  const hotRowY = COLD.top + COLD.hot * COLD.pitch;
+  // the cold list
+  if (lf < 282) {
+    let list = A(`left:0;top:${-80}px;font-size:30px;font-weight:700;color:#E6E8EC;white-space:nowrap`, 'Cold list — never called back');
+    for (let k = 0; k < 13; k++) {
+      if (k === COLD.hot && lf >= 254) continue;
+      const hot = k === COLD.hot ? P(lf, 88, 98) : 0;
+      list += A(`left:0;top:${k * COLD.pitch}px;width:${COLD.w}px;height:${COLD.pitch}px;opacity:${k === COLD.hot ? 1 : (lf > 88 ? lerp(1, .55, P(lf, 88, 100)) : 1)}`, coldRow(k, { hot, green: k === COLD.hot ? P(lf, 244, 254) : 0 }));
+    }
+    h += A(`left:${COLD.x - away * 1400}px;top:${COLD.top + listY(lf)}px;width:${COLD.w}px;height:1200px;${F(mb(-va, vel(listY, lf), .3))}`, list);
+  }
+  // the active-call dot: comes from the dashboard, docks into the highlighted row
+  const dotT = P(lf, 64, 92, E.io);
+  const dotX = lerp(960, COLD.x + 50, dotT), dotY = lerp(540, hotRowY + 42 + listY(lf), dotT);
+  const pulse = .5 + .5 * Math.sin(lf * .25);
+  if (lf < 254) h += A(`left:${dotX - 8}px;top:${dotY - 8}px;width:16px;height:16px;border-radius:8px;background:${C.green};box-shadow:0 0 ${10 + 10 * pulse}px ${3 + 4 * pulse}px rgba(18,164,113,.55)`);
+  // call panel
+  const pin = kf(lf, [[96, 760], [112, 0]], E.out);
+  const panelOut = P(lf, 252, 276, E.in), vpo = vel(g => P(g, 252, 276, E.in), lf) * 900;
+  const waveT = P(lf, 252, 282, E.io);
+  const W0 = { x: 1160 + 32 + pin, y: 340, w: 456 }, W1 = { x: 560, y: 540, w: 800 };
+  if (lf >= 96 && lf < 282) {
+    let pnl = A(`left:32px;top:30px;width:16px;height:16px;border-radius:8px;background:${C.green};box-shadow:0 0 ${8 + 8 * pulse}px rgba(18,164,113,.6)`) +
+      A(`left:60px;top:24px;font-size:22px;font-weight:700;color:#fff`, lf < 114 ? 'AI agent · calling…' : 'AI agent · connected');
+    const n1 = Math.floor(clamp((lf - 124) / 70) * AGENT_LINE.length), n2 = Math.floor(clamp((lf - 214) / 26) * LEAD_LINE.length);
+    pnl += A(`left:32px;top:190px;font-size:15px;font-weight:700;color:${C.mute2};letter-spacing:1.5px;opacity:${lf >= 122 ? 1 : 0}`, 'AGENT') +
+      A(`left:32px;top:212px;width:460px;font-size:23px;line-height:32px;color:#fff`, esc(AGENT_LINE.slice(0, n1))) +
+      A(`left:32px;top:300px;font-size:15px;font-weight:700;color:${C.mute2};letter-spacing:1.5px;opacity:${lf >= 212 ? 1 : 0}`, 'LEAD') +
+      A(`left:32px;top:322px;width:460px;font-size:23px;line-height:32px;color:#E6E8EC`, esc(LEAD_LINE.slice(0, n2)));
+    h += A(`left:${1160 + pin}px;top:${190 + panelOut * 900}px;width:520px;height:400px;border-radius:24px;background:${C.darkPanel};border:1px solid ${C.darkLine};${F(mb(0, vpo, .3))}`, pnl);
+  }
+  // the waveform: follows the voices, then moves to centre and flattens into a line
+  if (lf >= 112) {
+    const flat = P(lf, 322, 340, E.io);
+    const wx = lerp(W0.x, W1.x, waveT), wy = lerp(W0.y, W1.y, waveT), ww = lerp(W0.w, W1.w, waveT);
+    const ex = P(lf, 336, 359, E.in);
+    const lw = lerp(ww, 1100, ex), lx = 960 - lw / 2 + (wx + ww / 2 - 960) * (1 - ex);
+    h += A(`left:${lx}px;top:${wy - 50}px;width:${lw}px;height:100px`, waveform(lf, lw, flat));
+  }
+  // the hot row lifts out and flies into the same sheet, then the same dashboard
+  if (lf >= 254) {
+    const minisIn = kf(lf, [[256, -560], [280, 0]], E.out), minisOut = P(lf, 336, 359, E.in) * -700;
+    const my = minisIn + minisOut, vm = vel(g => kf(g, [[256, -560], [280, 0]], E.out) + P(g, 336, 359, E.in) * -700, lf);
+    const rowsSheet = [{ k: NEW_ROW, vals: RAHUL, tick: true }];
+    const filled = P(lf, 290, 300);
+    if (lf >= 290) rowsSheet.push({ k: NEW_ROW + 1, vals: OLD, chars: OLD.map(v => Math.floor(filled * v.length)) });
+    if (SHOW_SHEET) h += A(`left:${SHEET_MINI.x}px;top:${SHEET_MINI.y + my}px;width:${SH.w}px;height:640px;transform-origin:0 0;transform:scale(${MINI * 1.2});${F(mb(0, vm, .3))}`, sheetPanel({ rows: rowsSheet }));
+    h += A(`left:${DASH_MINI.x}px;top:${DASH_MINI.y + my}px;width:${DB.w + 80}px;height:720px;transform-origin:0 0;transform:scale(${MINI});${F(mb(0, vm, .3))}`,
+      dashMini(lf) + (lf >= 318 ? A(`left:40px;top:136px;width:${DB.w}px;height:${DB.cardH}px`, oldCard()) : ''));
+    // flight 1: list row → sheet row
+    const sheetS = MINI * 1.2;
+    const sheetRow = { x: SHEET_MINI.x, y: SHEET_MINI.y + my + rowTop(NEW_ROW + 1) * sheetS, w: SH.w * sheetS, h: SH.row * sheetS };
+    if (lf < 292) {
+      const t = P(lf, 262, 290, E.io), lift = P(lf, 254, 262, E.out);
+      const from = { x: COLD.x, y: hotRowY, w: COLD.w, h: COLD.pitch - 8 };
+      const x = lerp(from.x, sheetRow.x, t), y = lerp(from.y, sheetRow.y, t) - Math.sin(Math.PI * t) * 120, w = lerp(from.w, sheetRow.w, t), hh = lerp(from.h, sheetRow.h, t);
+      const v = Math.hypot(vel(g => lerp(from.x, sheetRow.x, P(g, 262, 290, E.io)), lf), vel(g => lerp(from.y, sheetRow.y, P(g, 262, 290, E.io)), lf));
+      h += A(`left:${x}px;top:${y}px;width:${w}px;height:${hh}px;transform:scale(${1 + lift * .03 * (1 - t)});${F(rbl(Math.min(4, v * .05)))}`,
+        A(`left:0;top:0;width:${COLD.w}px;height:${COLD.pitch - 8}px;transform-origin:0 0;transform:scale(${w / COLD.w},${hh / (COLD.pitch - 8)})`, coldRow(COLD.hot, { hot: 1, green: 1 })));
+    }
+    // flight 2: sheet row → top of the dashboard list
+    if (lf >= 296 && lf < 318) {
+      const t = P(lf, 296, 318, E.io);
+      const to = { x: DASH_MINI.x + 40 * MINI, y: DASH_MINI.y + my + 136 * MINI, w: DB.w * MINI, h: DB.cardH * MINI };
+      const x = lerp(sheetRow.x, to.x, t), y = lerp(sheetRow.y, to.y, t) - Math.sin(Math.PI * t) * 90, w = lerp(sheetRow.w, to.w, t), hh = lerp(sheetRow.h, to.h, t);
+      h += A(`left:${x}px;top:${y}px;width:${w}px;height:${hh}px`, A(`left:0;top:0;width:${DB.w}px;height:${DB.cardH}px;transform-origin:0 0;transform:scale(${w / DB.w},${hh / DB.cardH})`, oldCard()));
+    }
+  }
+  return h;
+});
+
+/* ---------- S9 · close ---------- */
+const DOTS = [{ l: 'Ad', c: C.blue }, { l: 'Page', c: C.ink }, { l: 'WhatsApp', c: C.green }, { l: 'Dashboard', c: C.blue }, { l: 'Booking', c: C.green }];
+const LOGO_CROP = { x: 132, y: 130, w: 1671, h: 1520 }; // the emblem only — the wordmark in the PNG would double the typed name
+shot('S9', 122, (lf, f) => {
+  let h = A(`left:0;top:0;width:1920px;height:1080px;background:#fff`);
+  const span = kf(lf, [[0, 1100], [12, 1240]], E.out);
+  const col = P(lf, 63, 69, E.in);
+  const lw = span * (1 - col), x0 = 960 - lw / 2;
+  const lightF = i => 2 + i * 15; // on the beat
+  if (lf < 70) {
+    let s = `<svg width="1920" height="1080" style="position:absolute;left:0;top:0"><rect x="${x0}" y="538.5" width="${lw}" height="3" rx="1.5" fill="${C.hair}"/>`;
+    // the line fills toward the latest lit dot
+    let fillTo = 0;
+    for (let i = 0; i < 5; i++) if (lf >= lightF(i)) fillTo = i + P(lf, lightF(i), lightF(i) + 15, E.io) * (i < 4 ? 1 : 0);
+    s += `<rect x="${x0}" y="538.5" width="${lw * fillTo / 4}" height="3" rx="1.5" fill="${C.ink}"/>`;
+    let lbl = '';
+    DOTS.forEach((d, i) => {
+      const dx = x0 + lw * i / 4, draw = P(lf, i * 2, i * 2 + 10, E.pop6), lit = P(lf, lightF(i), lightF(i) + 6, E.out), ring = P(lf, lightF(i), lightF(i) + 16, E.out);
+      s += `<circle cx="${dx}" cy="540" r="${15 * draw}" fill="${lit > 0 ? mixHex('#FFFFFF', d.c, lit) : '#fff'}" stroke="${lit > 0 ? d.c : C.mute}" stroke-width="3"/>`;
+      if (ring > 0 && ring < 1) s += `<circle cx="${dx}" cy="540" r="${15 + ring * 22}" fill="none" stroke="${d.c}" stroke-width="2" opacity="${1 - ring}"/>`;
+      lbl += A(`left:${dx - 110}px;top:${574 + col * 30}px;width:220px;text-align:center;font-size:26px;font-weight:${lit > .5 ? 700 : 500};color:${lit > .5 ? C.ink : C.mute2};opacity:${draw * (1 - col * 2)}`, d.l);
+    });
+    h += s + '</svg>' + lbl;
+  }
+  // the line collapses into the logo; end card
+  const lg = P(lf, 64, 72, E.out);
+  if (lg > 0) {
+    const sz = 300, sc = lerp(.15, 1, lg);
+    h += A(`left:${960 - sz * LOGO_CROP.w / LOGO_CROP.h / 2}px;top:${190}px;width:${sz * LOGO_CROP.w / LOGO_CROP.h}px;height:${sz}px;overflow:hidden;transform-origin:50% 350px;transform:scale(${sc});${F(rbl((1 - lg) * 6))}`,
+      `<img src="assets/golden-ratio-logo.png" style="position:absolute;left:${-LOGO_CROP.x * sz / LOGO_CROP.h}px;top:${-LOGO_CROP.y * sz / LOGO_CROP.h}px;width:${2000 * sz / LOGO_CROP.h}px;height:${2400 * sz / LOGO_CROP.h}px">`);
+  }
+  const tx = P(lf, 65, 72, E.out), tx2 = P(lf, 66, 73, E.out), tx3 = P(lf, 67, 74, E.out);
+  if (tx > 0) {
+    h += A(`left:0;top:${528 + (1 - tx) * 20}px;width:1920px;text-align:center;font-size:64px;font-weight:700;letter-spacing:-1.5px;opacity:${tx};${F(rbl((1 - tx) * 5))}`, 'Golden Ratio Solution');
+    h += A(`left:0;top:${626 + (1 - tx2) * 20}px;width:1920px;text-align:center;font-size:30px;color:${C.grey};opacity:${tx2}`, 'goldenratiosolution.com');
+    h += A(`left:${960 - 230}px;top:${700 + (1 - tx3) * 20}px;width:460px;height:72px;border-radius:36px;border:2px solid ${C.ink};text-align:center;line-height:68px;font-size:28px;font-weight:700;opacity:${tx3}`, 'Book a free 30-minute check');
+  }
+  // the last thing to move: a single gold underline sliding out under the name
+  const ul = P(lf, 72, 81, E.out);
+  if (ul > 0) h += A(`left:${960 - 330 * ul}px;top:612px;width:${660 * ul}px;height:4px;border-radius:2px;background:${C.gold}`);
+  return h;
+});
+
+/* ============================ captions ============================ */
+// [shot, from, to, text] in local frames; one at a time, lower third, 56 px / 700
+const CAPTIONS = [
+  ['S1', 34, 150, 'Someone is looking for a 2 BHK in Wakad. Right now.'],
+  ['S2', 22, 190, 'We put you in front of people already searching.'],
+  ['S3', 100, 144, 'He left without enquiring.'],
+  ['S3', 184, 236, 'Meta brings him back.'],
+  ['S4', 64, 222, 'One page per project. Built to make him ask.'],
+  ['S5', 50, 200, 'It answers in seconds. At any hour.'],
+  ['S5', 216, 300, 'In his language.'],
+  ['S5', 330, 470, 'And it hands over the moment he asks.'],
+  ['S6', 72, 164, 'Every lead writes itself down. Nothing is retyped.'],
+  ['S7', 30, 150, 'You see every lead the moment it lands.'],
+  ['S7', 160, 270, 'Give it to the right person.'],
+  ['S7', 350, 480, 'And watch it become a booking.'],
+  ['S8', 20, 140, 'The old list gets called too.'],
+  ['S8', 270, 345, 'Hot ones land in the same place.'],
+];
+let CAPS = [];
+function captionHTML(f) {
+  for (const c of CAPS) {
+    if (f < c.a || f > c.b) continue;
+    const tin = P(f, c.a, c.a + 10, E.out), tout = P(f, c.b - 10, c.b, E.in);
+    const y = 12 * (1 - tin) - 16 * tout, bl = 6 * (1 - tin) + 6 * tout;
+    return A(`left:0;top:${902 + y}px;width:1920px;text-align:center;font-size:56px;font-weight:700;letter-spacing:-1px;line-height:72px;white-space:nowrap;color:${c.dark ? '#FFFFFF' : C.ink};opacity:${tin * (1 - tout)};${F(rbl(bl))}`, esc(c.text));
+  }
+  return '';
+}
+
+/* ============================ timeline ============================ */
+let TL = [], TOTAL = 0;
+function buildTimeline() {
+  let f0 = 0; TL = [];
+  for (const s of SHOTS) {
+    if (s.name === 'S6' && !SHOW_SHEET) continue;
+    TL.push({ ...s, f0, f1: f0 + s.len - 1 }); f0 += s.len;
+  }
+  TOTAL = f0;
+  CAPS = CAPTIONS.filter(c => TL.find(s => s.name === c[0])).map(([n, a, b, text]) => {
+    const s = TL.find(s => s.name === n);
+    return { a: s.f0 + a, b: s.f0 + b, text, dark: n === 'S1' || n === 'S8' };
+  });
+  // guard: never two captions at once
+  for (let i = 1; i < CAPS.length; i++) if (CAPS[i].a <= CAPS[i - 1].b) throw new Error('captions overlap: ' + CAPS[i].text);
+}
+
+const stage = document.getElementById('stage');
+async function seek(f) {
+  DEFS = []; FID = 0;
+  const s = TL.find(s => f >= s.f0 && f <= s.f1) || TL[TL.length - 1];
+  // global frames for the cross-shot match cuts are written against the 90 s cut; offset when S6 is off
+  const shift = (!SHOW_SHEET && TL.indexOf(s) >= TL.findIndex(x => x.name === 'S7')) ? 180 : 0;
+  const lf = f - s.f0;
+  const body = s.render(lf, f + shift);
+  stage.innerHTML = `<svg width="0" height="0" style="position:absolute"><defs>${DEFS.join('')}</defs></svg>` + body + captionHTML(f);
+  await Promise.all([...stage.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+  return { shot: s.name, lf };
+}
+window.seek = seek;
+window.READY = (async () => {
+  await Promise.all([
+    document.fonts.load('400 26px "DM Sans"'), document.fonts.load('500 26px "DM Sans"'), document.fonts.load('700 26px "DM Sans"'),
+    document.fonts.load('400 26px "Noto Sans Devanagari"', 'राहायला शनिवारी ₹'), document.fonts.load('700 26px "Noto Sans Devanagari"', '₹'),
+  ]);
+  await document.fonts.ready;
+  const img = new Image(); img.src = 'assets/golden-ratio-logo.png'; await img.decode();
+  measureChat();
+  buildTimeline();
+  window.TOTAL = TOTAL;
+  const q = new URLSearchParams(location.search);
+  await seek(+(q.get('f') || 0));
+  return TOTAL;
+})();
+</script>
+</body>
+</html>
