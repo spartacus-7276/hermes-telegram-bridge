@@ -142,3 +142,25 @@ All in `film.html`, top of the script:
 
 Render: `python3 record.py --workers 4` (16:9) and `python3 record.py --vertical --workers 4` (9:16).
 Both resume from frames already on disk.
+
+---
+
+## Audio
+
+`python3 audio.py` builds the sound and muxes it onto copies of both cuts:
+`out/gr-realestate-journey-90s-audio.mp4` and `out/gr-realestate-journey-9x16-audio.mp4`.
+The silent masters stay untouched for editing in your app.
+
+- **Music:** an original bed synthesised in code at 120 BPM (D major: Dmaj9 → Bm9 → Gmaj7 → Asus2),
+  so it is locked to the same beat grid as the cuts. Nothing sampled, nothing licensed. It is sparse on the
+  night opening, drops almost to silence for the grey "he left" pause, is fullest during WhatsApp and the
+  dashboard, goes darker under the AI-calling shot, and resolves on D major for the end card.
+- **Sound design,** placed on the exact picture frames: search keystrokes, results landing, thumb taps,
+  the page building and the template crumpling, message pops (incoming and outgoing differ), a bell on
+  the 0:09 reply, sheet-cell ticks on the eighth notes, the drag-and-drop onto Sneha, both status clicks,
+  a bell on "Booking done", the call ring, and five rising notes as the journey dots light on the beat.
+- **Voiceover:** the script above, Indian English (edge-tts, `en-IN-PrabhatNeural`). This cloud session
+  cannot reach Microsoft's speech service (blocked by its network policy), so the committed audio files
+  have music and sound design only. On your machine run `pip install edge-tts numpy` and then
+  `python3 audio.py`; the voice is generated, the music ducks under it, and both `-audio.mp4` files are
+  rebuilt with the voice in. `python3 audio.py --no-vo` builds music and sound design only.

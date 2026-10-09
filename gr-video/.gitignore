@@ -5,3 +5,4 @@ out/poster_src/
 out/render.log
 out/**/*.tmp.png
 __pycache__/
+out/audio/
