@@ -31,12 +31,17 @@ STILLS = OUT / "stills"
 
 
 class Cut:
-    def __init__(self, vertical):
-        self.vertical = vertical
+    """services (default): the six-services film. journey: the earlier 90-second buyer-journey film."""
+    def __init__(self, vertical, name="services"):
+        self.vertical, self.name = vertical, name
         self.w, self.h = (1080, 1920) if vertical else (1920, 1080)
-        self.frames = OUT / ("frames_v" if vertical else "frames")
-        self.mp4 = OUT / ("gr-realestate-journey-9x16.mp4" if vertical else "gr-realestate-journey-90s.mp4")
-        self.query = "?v=1" if vertical else ""
+        if name == "journey":
+            self.frames = OUT / ("frames_v" if vertical else "frames")
+            self.mp4 = OUT / ("gr-realestate-journey-9x16.mp4" if vertical else "gr-realestate-journey-90s.mp4")
+        else:
+            self.frames = OUT / ("frames_services_v" if vertical else "frames_services")
+            self.mp4 = OUT / ("gr-services-9x16.mp4" if vertical else "gr-services-16x9.mp4")
+        self.query = f"?cut={name}" + ("&v=1" if vertical else "")
 
 
 def serve():
@@ -80,8 +85,8 @@ def shoot(page, f, path):
 
 
 def _worker(args):
-    url, vertical, frames, dest, tag = args
-    cut = Cut(vertical)
+    url, vertical, name, frames, dest, tag = args
+    cut = Cut(vertical, name)
     with sync_playwright() as p:
         browser = launch(p)
         page, _ = open_page(browser, url, cut)
@@ -111,7 +116,7 @@ def render(frames, dest, cut, force=False, workers=1):
     if todo:
         workers = max(1, min(workers, len(todo)))
         chunks = [todo[i::workers] for i in range(workers)]
-        jobs = [(url, cut.vertical, c, str(dest), f"w{i}") for i, c in enumerate(chunks)]
+        jobs = [(url, cut.vertical, cut.name, c, str(dest), f"w{i}") for i, c in enumerate(chunks)]
         if workers == 1:
             _worker(jobs[0])
         else:
@@ -171,9 +176,10 @@ def main():
     ap.add_argument("--encode", action="store_true")
     ap.add_argument("--vertical", action="store_true", help="the 1080 x 1920 cut")
     ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--cut", default="services", choices=["services", "journey"])
     ap.add_argument("--force", action="store_true", help="re-render frames already on disk")
     a = ap.parse_args()
-    cut = Cut(a.vertical)
+    cut = Cut(a.vertical, a.cut)
 
     if a.stills:
         board = a.stills == "board"

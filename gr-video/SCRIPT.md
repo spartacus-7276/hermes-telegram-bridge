@@ -1,4 +1,42 @@
-# Golden Ratio — real-estate journey film · script
+# Golden Ratio — services film (current cut) · script
+
+52.5 seconds · 1920×1080 · 30 fps · `out/gr-services-16x9-audio.mp4` (voice, subtitles, music, sound design)
+and `out/gr-services-16x9.mp4` (silent, subtitles burned in).
+
+Order: the six services on one screen → website → a page per project (your landing-page screenshot) →
+Google ads → WhatsApp assistant → AI calling → lead dashboard → end card. No Meta / retargeting anywhere.
+
+## Voiceover = subtitles
+
+| Starts | Line |
+|---|---|
+|  0.3s | We help Pune developers turn enquiries into site visits. |
+|  3.7s | Six things we build. One by one. |
+|  6.9s | One. Your website, built around your projects. |
+| 10.2s | Live status and RERA on every page. |
+| 13.6s | Two. A page for every project. |
+| 16.0s | Price and plan up front. One tap to book a visit. |
+| 19.6s | Three. Google ads, shown to people already searching. |
+| 23.3s | Four. A WhatsApp assistant that answers in seconds. |
+| 26.4s | At any hour, in Marathi, Hindi or English. |
+| 29.2s | And it hands over to your team the moment he asks. |
+| 32.5s | Five. An AI agent that calls every enquiry back. |
+| 36.1s | Even the old list nobody followed up. |
+| 39.0s | Six. One dashboard for every lead. |
+| 41.7s | Assign it, track the visit, mark the booking. |
+| 48.3s | Golden Ratio Solution. Book a free 30-minute check. |
+
+Voice in this render: **RHVoice bdl (offline)** — the cloud session cannot reach Microsoft's speech service. On your machine
+`pip install edge-tts numpy` then `python3 audio.py mix` swaps in the Indian English voice (en-IN-PrabhatNeural),
+fitted to the same windows, with no re-render needed. `vo.json` is the timeline both the picture and the sound use;
+`python3 audio.py plan` rebuilds it if the script changes (then re-render with `python3 record.py --workers 4`).
+
+The landing-page sections use your screenshot (`assets/landing-page.webp`, Yashada Epic on KEYS.BEYOND).
+The demo screens after it (Google, WhatsApp, calling, dashboard) keep the fictional Skyline Residency example.
+
+---
+
+# Earlier cut — 90-second buyer journey (`film.html?cut=journey`)
 
 90 seconds · 1920×1080 and 1080×1920 · 30 fps · silent by default (captions carry it).
 Timecodes are mm:ss from frame 0. Cuts land 2 frames before the beat (120 BPM).

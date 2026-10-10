@@ -6,3 +6,6 @@ out/render.log
 out/**/*.tmp.png
 __pycache__/
 out/audio/
+out/frames_services/
+out/frames_services_v/
+out/audio_services/

@@ -1,0 +1,168 @@
+{
+ "fps": 30,
+ "whip": 12,
+ "total": 1576,
+ "voice": "RHVoice bdl (offline)",
+ "segments": [
+  {
+   "id": "OV",
+   "f0": 0,
+   "whip": false,
+   "len": 200
+  },
+  {
+   "id": "WEB",
+   "f0": 200,
+   "whip": false,
+   "len": 201
+  },
+  {
+   "id": "PAGE",
+   "f0": 401,
+   "whip": false,
+   "len": 190
+  },
+  {
+   "id": "ADS",
+   "f0": 579,
+   "whip": true,
+   "old": "S2",
+   "oldF0": 178,
+   "r0": 4,
+   "speed": 1.57377,
+   "len": 123
+  },
+  {
+   "id": "WA",
+   "f0": 690,
+   "whip": true,
+   "old": "S5",
+   "oldF0": 958,
+   "r0": 0,
+   "speed": 1.63763,
+   "len": 288
+  },
+  {
+   "id": "CALL",
+   "f0": 966,
+   "whip": true,
+   "old": "S8",
+   "oldF0": 2218,
+   "r0": 0,
+   "speed": 1.54369,
+   "len": 207
+  },
+  {
+   "id": "DASH",
+   "f0": 1161,
+   "whip": true,
+   "old": "S7",
+   "oldF0": 1678,
+   "r0": 0,
+   "speed": 2.00855,
+   "len": 235
+  },
+  {
+   "id": "CLOSE",
+   "f0": 1384,
+   "whip": true,
+   "old": "S9",
+   "oldF0": 2578,
+   "r0": 0,
+   "speed": 1,
+   "len": 192
+  }
+ ],
+ "chunks": [
+  {
+   "a": 10,
+   "b": 109,
+   "text": "We help Pune developers turn enquiries into site visits.",
+   "i": 0
+  },
+  {
+   "a": 111,
+   "b": 184,
+   "text": "Six things we build. One by one.",
+   "i": 1
+  },
+  {
+   "a": 208,
+   "b": 305,
+   "text": "One. Your website, built around your projects.",
+   "i": 2
+  },
+  {
+   "a": 307,
+   "b": 385,
+   "text": "Live status and RERA on every page.",
+   "i": 3
+  },
+  {
+   "a": 407,
+   "b": 477,
+   "text": "Two. A page for every project.",
+   "i": 4
+  },
+  {
+   "a": 479,
+   "b": 572,
+   "text": "Price and plan up front. One tap to book a visit.",
+   "i": 5
+  },
+  {
+   "a": 587,
+   "b": 686,
+   "text": "Three. Google ads, shown to people already searching.",
+   "i": 6
+  },
+  {
+   "a": 698,
+   "b": 790,
+   "text": "Four. A WhatsApp assistant that answers in seconds.",
+   "i": 7
+  },
+  {
+   "a": 792,
+   "b": 875,
+   "text": "At any hour, in Marathi, Hindi or English.",
+   "i": 8
+  },
+  {
+   "a": 877,
+   "b": 962,
+   "text": "And it hands over to your team the moment he asks.",
+   "i": 9
+  },
+  {
+   "a": 974,
+   "b": 1080,
+   "text": "Five. An AI agent that calls every enquiry back.",
+   "i": 10
+  },
+  {
+   "a": 1082,
+   "b": 1157,
+   "text": "Even the old list nobody followed up.",
+   "i": 11
+  },
+  {
+   "a": 1169,
+   "b": 1248,
+   "text": "Six. One dashboard for every lead.",
+   "i": 12
+  },
+  {
+   "a": 1250,
+   "b": 1323,
+   "text": "Assign it, track the visit, mark the booking.",
+   "i": 13
+  },
+  {
+   "a": 1450,
+   "b": 1560,
+   "text": "Golden Ratio Solution. Book a free 30-minute check.",
+   "i": 14
+  }
+ ]
+}

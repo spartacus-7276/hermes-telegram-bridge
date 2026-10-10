@@ -442,7 +442,7 @@ function dashChrome(t, o = {}) { // t: entrance 0 → 1
   h += A(`left:${DB.listX}px;top:${46 - v * 140}px;font-size:40px;font-weight:700;letter-spacing:-1px`, 'Leads') +
        A(`left:${DB.listX + 128}px;top:${64 - v * 140}px;font-size:20px;color:${C.grey}`, PROJECT);
   h += A(`left:0;top:${-v * 160}px;width:1920px;height:1080px`, counterCard(o.count ?? 11, o));
-  const nav = ['All leads', 'WhatsApp', 'Google ads', 'Meta ads', 'AI calls'];
+  const nav = ['All leads', 'WhatsApp', 'Google ads', 'AI calls'];
   h += A(`left:${60 - v * 420}px;top:170px;width:300px;height:400px`, nav.map((n, i) => A(`left:0;top:${i * 56}px;width:300px;height:48px;border-radius:12px;background:${i === 0 ? C.panel : 'transparent'};padding-left:18px;line-height:48px;font-size:21px;font-weight:${i === 0 ? 700 : 500};color:${i === 0 ? C.ink : C.grey}`, n)).join(''));
   h += A(`left:${DB.listX}px;top:${170 + v * 60}px;font-size:16px;font-weight:700;color:${C.grey};letter-spacing:1.5px;opacity:${e}`, 'NEW LEADS');
   // team
@@ -1050,6 +1050,166 @@ shot('S9', 122, (lf, f) => {
   return h;
 });
 
+/* =====================================================================
+   SERVICES CUT (the default): the six services up front, then each one fast,
+   voiced and subtitled. Timeline and subtitles come from vo.json (audio.py plan).
+   The demo shots reuse the journey cut's drawings, played faster.
+   ===================================================================== */
+const CUT = QS.get('cut') || 'services';
+let PLAN = null;
+const SITE_IMG = 'assets/landing-page.webp';           // your project page screenshot, 861 × 2000
+const SITE = { w: 861, h: 2000 };
+const BR = { x: 460, y: 60, w: 1000, h: 800, bar: 44 };  // browser window
+const VP = { x: BR.x, y: BR.y + BR.bar, w: BR.w, h: BR.h - BR.bar };
+const IS = VP.w / SITE.w;
+const SERVICES = [
+  { n: '01', t: 'Your website', d: 'Built around your projects, with live status.', rail: 'Website' },
+  { n: '02', t: 'A page per project', d: 'Built to make him ask for a visit.', rail: 'Project pages' },
+  { n: '03', t: 'Google ads', d: 'Shown to people already searching.', rail: 'Google ads' },
+  { n: '04', t: 'WhatsApp assistant', d: 'Answers in seconds, at any hour.', rail: 'WhatsApp' },
+  { n: '05', t: 'AI calling', d: 'Calls every enquiry back.', rail: 'AI calling' },
+  { n: '06', t: 'Lead dashboard', d: 'Every lead and booking on one screen.', rail: 'Dashboard' },
+];
+const SEG_RAIL = { WEB: 0, PAGE: 1, ADS: 2, WA: 3, CALL: 4, DASH: 5 };
+function svcIcon(i, s = 84) {
+  const ic = [
+    `<rect x="10" y="18" width="80" height="62" rx="9" fill="#fff" stroke="${C.ink}" stroke-width="5"/><path d="M10 34 h80" stroke="${C.ink}" stroke-width="5"/><circle cx="20" cy="26" r="3" fill="${C.ink}"/><circle cx="30" cy="26" r="3" fill="${C.ink}"/><rect x="22" y="44" width="30" height="24" rx="4" fill="${C.blue}"/><rect x="58" y="46" width="22" height="6" rx="3" fill="${C.hair}"/><rect x="58" y="58" width="16" height="6" rx="3" fill="${C.hair}"/>`,
+    `<rect x="30" y="8" width="42" height="84" rx="10" fill="${C.slate}"/><rect x="35" y="15" width="32" height="70" rx="6" fill="#fff"/><rect x="39" y="20" width="24" height="18" rx="3" fill="${C.panel}"/><path d="M42 36 l8 -10 l8 10 z" fill="${C.ink}"/><rect x="39" y="43" width="24" height="4" rx="2" fill="${C.hair}"/><rect x="39" y="70" width="24" height="10" rx="5" fill="${C.green}"/>`,
+    `<circle cx="50" cy="52" r="38" fill="#E9F0FF"/><circle cx="50" cy="52" r="24" fill="#fff"/><circle cx="50" cy="52" r="11" fill="${C.blue}"/><path d="M84 18 l-28 28" stroke="${C.ink}" stroke-width="6" stroke-linecap="round"/><path d="M86 30 l5 -14 l-14 5 z" fill="${C.ink}"/>`,
+    `<rect x="8" y="14" width="56" height="24" rx="12" fill="${C.hair}"/><rect x="34" y="44" width="58" height="24" rx="12" fill="${C.green}"/><rect x="34" y="72" width="42" height="20" rx="10" fill="${C.green}"/>`,
+    `<circle cx="46" cy="52" r="36" fill="${C.greenTint}"/><path d="M30 34 a7 7 0 0 1 9 -3 l7 10 l-7 7 a28 28 0 0 0 12 12 l7 -7 l10 7 a7 7 0 0 1 -3 9 c-12 7 -40 -20 -35 -35 z" fill="${C.ink}"/><path d="M76 26 a20 20 0 0 1 8 18 M70 34 a10 10 0 0 1 4 9" stroke="${C.green}" stroke-width="5" stroke-linecap="round" fill="none"/>`,
+    `<rect x="8" y="14" width="84" height="66" rx="9" fill="#fff" stroke="${C.ink}" stroke-width="5"/><rect x="20" y="52" width="12" height="18" rx="3" fill="${C.mute}"/><rect x="38" y="40" width="12" height="30" rx="3" fill="${C.blue}"/><rect x="56" y="46" width="12" height="24" rx="3" fill="${C.mute}"/><rect x="74" y="30" width="10" height="40" rx="3" fill="${C.green}"/>`,
+  ][i];
+  return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" style="display:block">${ic}</svg>`;
+}
+const TILE = i => ({ x: 180 + (i % 3) * 530, y: 300 + Math.floor(i / 3) * 290, w: 500, h: 260 });
+function tileInner(i) {
+  const s = SERVICES[i];
+  return A(`left:32px;top:30px;font-size:20px;font-weight:700;color:${C.mute2};letter-spacing:1px`, s.n) +
+    A(`left:32px;top:70px`, svcIcon(i, 84)) +
+    A(`left:140px;top:78px;width:330px;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:38px`, s.t) +
+    A(`left:140px;top:${s.t.length > 16 ? 160 : 124}px;width:330px;font-size:22px;line-height:30px;color:${C.grey}`, s.d);
+}
+function ovRender(lf, len) {
+  let h = '';
+  const ex = P(lf, len - 24, len - 1, E.io), exIn = P(lf, len - 24, len - 1, E.in);
+  const hi = P(lf, 0, 14, E.out);
+  const head = A(`left:0;top:${70 - exIn * 160}px;width:1920px;display:flex;justify-content:center;align-items:center;gap:16px;opacity:${hi};transform:translateY(${(1 - hi) * 16}px)`,
+    `<div style="width:${56 * LOGO_CROP.w / LOGO_CROP.h}px;height:56px;overflow:hidden;position:relative"><img src="assets/golden-ratio-logo.png" style="position:absolute;left:${-LOGO_CROP.x * 56 / LOGO_CROP.h}px;top:${-LOGO_CROP.y * 56 / LOGO_CROP.h}px;width:${2000 * 56 / LOGO_CROP.h}px"></div><span style="font-size:28px;font-weight:700;letter-spacing:-.5px">Golden Ratio Solution</span>`);
+  const ti = P(lf, 6, 22, E.out);
+  const title = A(`left:0;top:${150 + (1 - ti) * 20 - exIn * 200}px;width:1920px;text-align:center;font-size:60px;font-weight:700;letter-spacing:-2px;opacity:${ti};${F(rbl((1 - ti) * 5))}`,
+    `What we build for <span style="color:${C.green}">real estate developers</span>`);
+  h += head + title;
+  for (let i = 0; i < 6; i++) {
+    const T = TILE(i), a = 34 + 8 * i, p = P(lf, a, a + 10, E.pop6), pi = clamp(P(lf, a, a + 6));
+    if (pi <= 0) continue;
+    if (i === 0 && ex > 0) {
+      // tile 1 becomes the browser window of the next shot
+      const R = { x: lerp(T.x, BR.x, ex), y: lerp(T.y, BR.y, ex), w: lerp(T.w, BR.w, ex), h: lerp(T.h, BR.h, ex) };
+      h += A(`left:${R.x}px;top:${R.y}px;width:${R.w}px;height:${R.h}px;border-radius:${lerp(24, 18, ex)}px;background:#fff;border:1px solid ${C.hair};box-shadow:0 24px 50px -30px rgba(22,24,29,.35);overflow:hidden`,
+        A(`left:0;top:${-exIn * 160}px;width:500px;height:260px;opacity:${1 - ex}`, tileInner(0)));
+      continue;
+    }
+    const fall = P(lf, len - 24 + i * 1.5, len - 6 + i * 1.5, E.in), vf = vel(g => P(g, len - 24 + i * 1.5, len - 6 + i * 1.5, E.in), lf) * 900;
+    h += A(`left:${T.x}px;top:${T.y + (1 - p) * 24 + fall * 900}px;width:${T.w}px;height:${T.h}px;border-radius:24px;background:${i === 0 ? C.greenTint : '#fff'};border:1px solid ${i === 0 ? C.green : C.hair};box-shadow:0 18px 40px -30px rgba(22,24,29,.3);transform:scale(${0.92 + 0.08 * p});opacity:${pi};${F(mb(0, vf, .3))}`, tileInner(i));
+  }
+  return h;
+}
+// browser + screenshot with a camera: focus point (image px) shown at a viewport point, at zoom z
+function siteView(cam, extra = '') {
+  const z = cam.z, tx = cam.sx - cam.fx * IS * z, ty = cam.sy - cam.fy * IS * z;
+  const chrome = A(`left:0;top:0;width:${BR.w}px;height:${BR.bar}px;background:${C.panel};border-bottom:1px solid ${C.hair}`,
+    [0, 1, 2].map(k => A(`left:${18 + k * 18}px;top:16px;width:12px;height:12px;border-radius:6px;background:${C.mute}`)).join('') +
+    A(`left:120px;top:9px;width:${BR.w - 240}px;height:26px;border-radius:13px;background:#fff;border:1px solid ${C.hair}`,
+      A(`left:12px;top:6px`, `<svg width="12" height="14" viewBox="0 0 12 14"><rect x="1" y="6" width="10" height="7" rx="2" fill="${C.grey}"/><path d="M3 6 V4 a3 3 0 0 1 6 0 V6" stroke="${C.grey}" stroke-width="1.6" fill="none"/></svg>`) + bar(32, 10, 160, 6, C.hair)));
+  const page = A(`left:0;top:${BR.bar}px;width:${VP.w}px;height:${VP.h}px;overflow:hidden;background:#fff`,
+    `<img src="${SITE_IMG}" style="position:absolute;left:0;top:0;width:${SITE.w * IS}px;height:${SITE.h * IS}px;transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${z});${cam.blur || ''}">` + extra);
+  return { html: A(`left:${BR.x}px;top:${BR.y}px;width:${BR.w}px;height:${BR.h}px;border-radius:18px;background:#fff;border:1px solid ${C.hair};box-shadow:0 30px 60px -36px rgba(22,24,29,.4);overflow:hidden`, chrome + page), tx, ty, z };
+}
+const toStage = (v, ix, iy) => ({ x: VP.x + v.tx + ix * IS * v.z, y: VP.y + v.ty + iy * IS * v.z });
+function chip(text, ax, ay, side, t, dot = C.green) { // a callout with a leader line to a point on the page
+  if (t <= 0) return '';
+  const e = E.out(clamp(t)), w = 30 + text.length * 13.2, cy = ay;
+  const cx = side === 'left' ? 400 - w : 1520;
+  const lx0 = side === 'left' ? 400 : 1520, lx1 = ax;
+  const lineW = Math.abs(lx1 - lx0) * e;
+  return `<svg width="1920" height="1080" style="position:absolute;left:0;top:0;overflow:visible"><path d="M${lx0} ${cy} L${lerp(lx0, lx1, e)} ${lerp(cy, ay, e)}" stroke="${C.ink}" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>${e > .95 ? `<circle cx="${ax}" cy="${ay}" r="7" fill="${dot}" stroke="#fff" stroke-width="3"/>` : ''}</svg>` +
+    A(`left:${cx + (side === 'left' ? -1 : 1) * (1 - e) * 30}px;top:${cy - 28}px;height:56px;padding:0 22px;border-radius:28px;background:#fff;border:1px solid ${C.hair};box-shadow:0 12px 28px -16px rgba(22,24,29,.35);display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;white-space:nowrap;opacity:${clamp(t * 2)}`,
+      `<span style="width:12px;height:12px;border-radius:6px;background:${dot};display:inline-block"></span>${esc(text)}`) ;
+  void lineW;
+}
+function webRender(lf, len) {
+  const rise = kf(lf, [[0, 30], [16, 0]], E.out);
+  const scrollF = g => kf(g, [[10, 0], [len, 150]], E.sio);
+  const cam = { fx: 0, fy: scrollF(lf) - rise / IS, sx: 0, sy: 0, z: 1 };
+  const v = siteView(cam);
+  let h = v.html;
+  const p1 = toStage(v, 221, 315), p2 = toStage(v, 187, 292), p3 = toStage(v, 407, 422);
+  h += chip('Your projects, your brand', p1.x, p1.y, 'left', P(lf, len * .18, len * .18 + 14));
+  h += chip('Live project status', p2.x, p2.y - 70, 'left', P(lf, len * .42, len * .42 + 14));
+  h += chip('RERA on every page', p3.x, p3.y + 60, 'left', P(lf, len * .66, len * .66 + 14));
+  return h;
+}
+function pageRender(lf, len) {
+  // zoom to the price, travel down to "Book a private visit", click it
+  const k1 = len * .3, k2 = len * .45, k3 = len * .62;
+  const fx = kf(lf, [[0, 0], [k1, 560], [k2, 560], [k3, 560]], E.io);
+  const fy = kf(lf, [[0, 150], [k1, 300], [k2, 300], [k3, 1330]], E.io);
+  const sx = kf(lf, [[0, 0], [k1, 420], [k2, 420], [k3, 420]], E.io);
+  const sy = kf(lf, [[0, 0], [k1, 150], [k2, 150], [k3, 200]], E.io);
+  const z = kf(lf, [[0, 1], [k1, 1.45], [k2, 1.45], [k3, 1.3]], E.io);
+  const vy = vel(g => kf(g, [[0, 150], [k1, 300], [k2, 300], [k3, 1330]], E.io), lf) * IS;
+  const cam = { fx, fy, sx, sy, z, blur: F(dbl(0, Math.min(14, Math.abs(vy) * .25))) };
+  const pv = siteView(cam);
+  const btn = toStage(pv, 618, 1388), price = toStage(pv, 590, 316);
+  const press = kf(lf, [[len * .82, 0], [len * .82 + 3, 1], [len * .82 + 9, 0]]);
+  const ring = P(lf, len * .82, len * .82 + 18, E.out);
+  let extra = '';
+  if (lf > k3 - 6) {
+    const bw = 137 * IS * pv.z, bh = 22 * IS * pv.z;
+    extra = `<div class="a" style="left:${btn.x - VP.x - bw / 2}px;top:${btn.y - VP.y - bh / 2}px;width:${bw}px;height:${bh}px;border-radius:${bh / 2}px;box-shadow:0 0 0 ${3 + ring * 16}px rgba(62,123,250,${.35 * (1 - ring)});background:rgba(255,255,255,${press * .25})"></div>`;
+  }
+  const v = siteView(cam, extra);
+  let h = v.html;
+  h += chip('Price and plan up front', price.x, price.y, 'right', P(lf, len * .22, len * .22 + 14) * (1 - P(lf, k2, k2 + 8)));
+  h += chip('One tap to book a visit', btn.x + 80, btn.y, 'right', P(lf, len * .64, len * .64 + 14));
+  const cxf = g => kf(g, [[len * .6, 1300], [len * .8, btn.x - 10, E.out], [len, btn.x - 10]]);
+  const cyf = g => kf(g, [[len * .6, 1100], [len * .8, btn.y + 4, E.out], [len, btn.y + 4]]);
+  if (lf >= len * .6) h += cursor(cxf(lf), cyf(lf), kf(lf, [[len * .82, 1], [len * .82 + 3, .86], [len * .82 + 8, 1]]), F(cmb(vel(cxf, lf), vel(cyf, lf))));
+  return h;
+}
+const OLD_SHOT = name => SHOTS.find(s => s.name === name);
+const NEW_RENDER = { OV: ovRender, WEB: webRender, PAGE: pageRender };
+function railHTML(active, dark) {
+  if (active == null) return '';
+  const on = dark ? '#FFFFFF' : C.ink, off = dark ? C.grey : C.mute2;
+  return A(`left:0;top:1028px;width:1920px;display:flex;justify-content:center;gap:34px;font-size:17px;font-weight:700;letter-spacing:1px`,
+    SERVICES.map((s, i) => `<span style="color:${i === active ? on : off};display:flex;align-items:center;gap:8px">${i === active ? `<span style="width:8px;height:8px;border-radius:4px;background:${C.green};display:inline-block"></span>` : ''}${s.n} ${s.rail.toUpperCase()}</span>`).join(''));
+}
+function segBody(seg, lf) {
+  if (seg.old) {
+    const o = seg.r0 + lf * seg.speed;
+    return OLD_SHOT(seg.old).render(o, seg.oldF0 + o);
+  }
+  return NEW_RENDER[seg.id](lf, seg.len);
+}
+const SEG_BG = { CALL: C.dark };
+function servicesFrame(f) {
+  const segs = PLAN.segments, on = segs.filter(s => f >= s.f0 && f < s.f0 + s.len);
+  const wrap = (s, x, extra = '') => A(`left:${x}px;top:0;width:1920px;height:1080px;overflow:hidden;background:${SEG_BG[s.id] || '#fff'};${extra}`, segBody(s, f - s.f0));
+  let body, cur = on[on.length - 1];
+  if (on.length > 1) {
+    // whip: both shots move together, smeared along the move
+    const a = on[0], b = on[1], p = (f - b.f0 + 1) / (PLAN.whip + 1), e = E.io(clamp(p));
+    const v = 1920 * (E.io(clamp(p)) - E.io(clamp(p - 1 / (PLAN.whip + 1))));
+    const sm = F(dbl(Math.min(48, v * .35), 0));
+    body = wrap(a, -1920 * e, sm) + wrap(b, 1920 * (1 - e), sm);
+    cur = e > .5 ? b : a;
+  } else body = wrap(cur, 0);
+  const dark = SEG_BG[cur.id] === C.dark;
+  return { body: body + railHTML(SEG_RAIL[cur.id], dark), dark, name: cur.id };
+}
+
 /* ============================ captions ============================ */
 // [shot, from, to, text] in local frames; one at a time, lower third, 56 px / 700
 const CAPTIONS = [
@@ -1072,7 +1232,7 @@ let CAPS = [];
 function captionHTML(f) {
   for (const c of CAPS) {
     if (f < c.a || f > c.b) continue;
-    const tin = P(f, c.a, c.a + 10, E.out), tout = P(f, c.b - 10, c.b, E.in);
+    const io = c.fast ? 6 : 10, tin = P(f, c.a, c.a + io, E.out), tout = P(f, c.b - io, c.b, E.in);
     const y = 12 * (1 - tin) - 16 * tout, bl = 6 * (1 - tin) + 6 * tout;
     const pos = VERT ? `left:60px;top:${1500 + y}px;width:960px;white-space:normal;line-height:68px;` : `left:0;top:${902 + y}px;width:1920px;white-space:nowrap;line-height:72px;`;
     return A(`${pos}text-align:center;font-size:56px;font-weight:700;letter-spacing:-1px;color:${c.dark ? '#FFFFFF' : C.ink};opacity:${tin * (1 - tout)};${F(rbl(bl))}`, esc(c.text));
@@ -1083,6 +1243,14 @@ function captionHTML(f) {
 /* ============================ timeline ============================ */
 let TL = [], TOTAL = 0;
 function buildTimeline() {
+  if (CUT === 'services') {
+    TOTAL = PLAN.total;
+    const segAt = f => PLAN.segments.filter(s => f >= s.f0).pop();             // the shot that owns this frame
+    const dark = f => SEG_BG[segAt(f + 6).id] === C.dark;                     // judged just after the whip
+    CAPS = PLAN.chunks.map(c => ({ a: c.a, b: c.b, text: c.text, dark: dark(c.a), fast: true }));
+    for (let i = 1; i < CAPS.length; i++) if (CAPS[i].a <= CAPS[i - 1].b) CAPS[i - 1].b = CAPS[i].a - 1; // one subtitle at a time
+    return;
+  }
   let f0 = 0; TL = [];
   for (const s of SHOTS) {
     if (s.name === 'S6' && !SHOW_SHEET) continue;
@@ -1113,6 +1281,13 @@ function shotCam(name, lf) { // vertical framing; cameras blend across each matc
 }
 async function seek(f) {
   DEFS = []; FID = 0;
+  if (CUT === 'services') {
+    const fr = servicesFrame(f);
+    stage.style.background = '#FFFFFF';
+    stage.innerHTML = `<svg width="0" height="0" style="position:absolute"><defs>${DEFS.join('')}</defs></svg>` + fr.body + captionHTML(f);
+    await Promise.all([...stage.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+    return { shot: fr.name };
+  }
   const s = TL.find(s => f >= s.f0 && f <= s.f1) || TL[TL.length - 1];
   // global frames for the cross-shot match cuts are written against the 90 s cut; offset when S6 is off
   const shift = (!SHOW_SHEET && TL.indexOf(s) >= TL.findIndex(x => x.name === 'S7')) ? 180 : 0;
@@ -1136,6 +1311,10 @@ window.READY = (async () => {
   await document.fonts.ready;
   stage.style.width = SW + 'px'; stage.style.height = SHH + 'px';
   const img = new Image(); img.src = 'assets/golden-ratio-logo.png'; await img.decode();
+  if (CUT === 'services') {
+    PLAN = await (await fetch('vo.json')).json();
+    const si = new Image(); si.src = SITE_IMG; await si.decode();
+  }
   measureChat();
   buildTimeline();
   window.TOTAL = TOTAL;
