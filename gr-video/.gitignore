@@ -9,3 +9,4 @@ out/audio/
 out/frames_services/
 out/frames_services_v/
 out/audio_services/
+out/*.log
