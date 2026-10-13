@@ -2449,7 +2449,7 @@
         var focusTarget = target.querySelector('[tabindex="-1"]') || target.querySelector('h1, h2');
         if (focusTarget && !focusTarget.hasAttribute('tabindex')) focusTarget.setAttribute('tabindex', '-1');
         scrollToEl(target, focusTarget);
-        if (history.pushState) history.pushState(null, '', hash);
+        try { if (history.pushState) history.pushState(null, '', hash); } catch (err) { /* sandboxed frames may refuse */ }
       });
 
       /* Header shadow + back-to-top visibility */
