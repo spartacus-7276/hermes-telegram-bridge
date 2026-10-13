@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SV Realtor — Commercial Real Estate Opportunities in Pune (Prototype)</title>
+  <meta name="description" content="SV Realtor is a prototype commercial real estate discovery platform focused on Pune. Explore demonstration listings, property fundamentals, rental assumptions and risks in one place.">
+  <meta name="keywords" content="Pune commercial real estate, office space Pune, Hinjewadi, Kharadi, Baner, Wakad, rental yield, property research">
+  <!-- Prototype with fictional listings: keep it out of search indexes. Remove for production. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#111317">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:site_name" content="SV Realtor">
+  <meta property="og:title" content="SV Realtor — Commercial Real Estate. Within Reach.">
+  <meta property="og:description" content="Discover income-generating commercial property opportunities across Pune. Prototype with demonstration data.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23035AF7'/%3E%3Cpath d='M9 23V13h4v10M15 23V9h4v14M21 23v-7h3v7' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    /* ------------------------------------------------------------------
+       Early boot: JS flag + image fallback (runs before any <img> loads)
+       ------------------------------------------------------------------ */
+    document.documentElement.classList.add('js');
+
+    window.svPlaceholder = function (label) {
+      var safe = String(label || 'SV Realtor').replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+      var svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">' +
+        '<rect width="800" height="600" fill="#1A1D23"/>' +
+        '<g stroke="#262A32" stroke-width="1">' +
+        '<path d="M0 100H800M0 200H800M0 300H800M0 400H800M0 500H800M100 0V600M200 0V600M300 0V600M400 0V600M500 0V600M600 0V600M700 0V600"/></g>' +
+        '<g fill="#2A2F38"><rect x="230" y="190" width="120" height="280"/><rect x="360" y="130" width="130" height="340"/><rect x="500" y="240" width="90" height="230"/></g>' +
+        '<g fill="#3A414D">' +
+        '<rect x="250" y="215" width="80" height="6"/><rect x="250" y="245" width="80" height="6"/><rect x="250" y="275" width="80" height="6"/><rect x="250" y="305" width="80" height="6"/><rect x="250" y="335" width="80" height="6"/><rect x="250" y="365" width="80" height="6"/>' +
+        '<rect x="380" y="155" width="90" height="6"/><rect x="380" y="185" width="90" height="6"/><rect x="380" y="215" width="90" height="6"/><rect x="380" y="245" width="90" height="6"/><rect x="380" y="275" width="90" height="6"/><rect x="380" y="305" width="90" height="6"/><rect x="380" y="335" width="90" height="6"/>' +
+        '<rect x="515" y="265" width="60" height="6"/><rect x="515" y="295" width="60" height="6"/><rect x="515" y="325" width="60" height="6"/></g>' +
+        '<rect x="200" y="470" width="420" height="2" fill="#3A414D"/>' +
+        '<rect x="360" y="118" width="24" height="12" fill="#035AF7"/>' +
+        '<text x="400" y="525" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="600" fill="#D5D9E0">' + safe + '</text>' +
+        '<text x="400" y="555" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" fill="#868D99">Photograph unavailable</text>' +
+        '</svg>';
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    };
+
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t.tagName === 'IMG' && !t.getAttribute('data-fallback-applied')) {
+        t.setAttribute('data-fallback-applied', '1');
+        t.classList.add('is-fallback');
+        t.src = window.svPlaceholder(t.getAttribute('data-label') || 'SV Realtor');
+      }
+    }, true);
+  </script>
+
+  <style>
+    /* ==================================================================
+       1. DESIGN TOKENS
+       ================================================================== */
+    :root {
+      /* Colour */
+      --c-ink: #111317;
+      --c-ink-2: #1A1D23;
+      --c-ink-3: #252931;
+      --c-ink-line: #2F343D;
+      --c-text: #14171C;
+      --c-muted: #555C68;
+      --c-subtle: #7E8591;
+      --c-line: #E3E6EB;
+      --c-line-strong: #CDD2DA;
+      --c-bg: #FFFFFF;
+      --c-soft: #F5F6F8;
+      --c-soft-2: #ECEEF2;
+      --c-accent: #035AF7;
+      --c-accent-hover: #0047D1;
+      --c-accent-tint: #EBF2FF;
+      --c-on-dark: #F3F4F6;
+      --c-on-dark-muted: #A3AAB5;
+      --c-error: #B42318;
+      --c-error-tint: #FEF3F2;
+
+      /* Typography */
+      --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --fs-xs: .75rem;
+      --fs-sm: .875rem;
+      --fs-base: 1rem;
+      --fs-md: 1.0625rem;
+      --fs-lg: 1.25rem;
+      --fs-xl: 1.5rem;
+      --fs-2xl: clamp(1.625rem, 2.6vw, 2.125rem);
+      --fs-3xl: clamp(2rem, 4vw, 3rem);
+      --fs-hero: clamp(2.6rem, 6vw, 4.75rem);
+      --lh-tight: 1.08;
+      --lh-snug: 1.3;
+      --lh-body: 1.6;
+
+      /* Spacing */
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 24px;
+      --sp-6: 32px;
+      --sp-7: 48px;
+      --sp-8: 64px;
+      --sp-9: 96px;
+      --section-y: clamp(72px, 9vw, 128px);
+      --gutter: clamp(16px, 4vw, 40px);
+      --container: 1240px;
+
+      /* Radius */
+      --r-xs: 4px;
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 14px;
+      --r-xl: 20px;
+      --r-pill: 999px;
+
+      /* Elevation & motion */
+      --shadow-sm: 0 1px 2px rgba(17, 19, 23, .06);
+      --shadow-md: 0 10px 30px -12px rgba(17, 19, 23, .18);
+      --shadow-lg: 0 30px 80px -24px rgba(17, 19, 23, .45);
+      --ease: cubic-bezier(.2, .7, .2, 1);
+      --dur: .22s;
+      --header-h: 72px;
+    }
+
+    /* ==================================================================
+       2. BASE
+       ================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html {
+      -webkit-text-size-adjust: 100%;
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--header-h) + 16px);
+    }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--fs-base);
+      line-height: var(--lh-body);
+      color: var(--c-text);
+      background: var(--c-bg);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body.modal-open { overflow: hidden; }
+    img { max-width: 100%; display: block; }
+    h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+    ul, ol { padding: 0; list-style: none; }
+    h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; line-height: var(--lh-snug); }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; background: none; border: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; border-radius: 2px; }
+    [tabindex="-1"]:focus { outline: none; }
+    ::selection { background: var(--c-accent); color: #fff; }
+
+    .container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .visually-hidden {
+      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    .skip-link {
+      position: absolute; left: 16px; top: -60px; z-index: 200;
+      background: var(--c-accent); color: #fff; padding: 10px 16px; border-radius: var(--r-sm);
+      font-weight: 600; transition: top var(--dur) var(--ease);
+    }
+    .skip-link:focus { top: 12px; }
+
+    .icon {
+      width: 20px; height: 20px; flex: none;
+      fill: none; stroke: currentColor; stroke-width: 1.6;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .icon--sm { width: 16px; height: 16px; }
+    .icon--lg { width: 24px; height: 24px; }
+
+    /* ==================================================================
+       3. BUTTONS, TAGS, SHARED UI
+       ================================================================== */
+    .btn {
+      --btn-h: 48px;
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+      height: var(--btn-h); padding: 0 22px;
+      border-radius: var(--r-sm); border: 1px solid transparent;
+      font-size: var(--fs-sm); font-weight: 600; letter-spacing: .005em; white-space: nowrap;
+      transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+                  border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn--sm { --btn-h: 40px; padding: 0 16px; }
+    .btn--lg { --btn-h: 54px; padding: 0 28px; font-size: var(--fs-base); }
+    .btn--block { width: 100%; }
+    .btn--primary { background: var(--c-accent); color: #fff; }
+    .btn--primary:hover { background: var(--c-accent-hover); }
+    .btn--dark { background: var(--c-ink); color: #fff; }
+    .btn--dark:hover { background: var(--c-ink-3); }
+    .btn--outline { border-color: var(--c-line-strong); color: var(--c-text); background: var(--c-bg); }
+    .btn--outline:hover { border-color: var(--c-text); }
+    .btn--ghost { color: var(--c-text); }
+    .btn--ghost:hover { background: var(--c-soft); }
+    .btn--outline-light { border-color: rgba(255, 255, 255, .28); color: #fff; }
+    .btn--outline-light:hover { border-color: #fff; background: rgba(255, 255, 255, .06); }
+    .btn .icon { transition: transform var(--dur) var(--ease); }
+    .btn:hover .icon--arrow { transform: translateX(3px); }
+
+    .link-btn {
+      color: var(--c-accent); font-weight: 600; font-size: var(--fs-sm);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .link-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 26px; padding: 0 10px; border-radius: var(--r-pill);
+      font-size: var(--fs-xs); font-weight: 600; letter-spacing: .02em;
+    }
+    .tag--demo { background: rgba(17, 19, 23, .78); color: #fff; backdrop-filter: blur(4px); }
+    .tag--outline { border: 1px solid var(--c-line-strong); color: var(--c-muted); }
+    .tag--accent { background: var(--c-accent-tint); color: var(--c-accent); }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: var(--fs-xs); font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--c-accent);
+    }
+    .eyebrow::before { content: ""; width: 18px; height: 2px; background: currentColor; }
+
+    .section { padding-block: var(--section-y); }
+    .section--soft { background: var(--c-soft); }
+    .section--dark { background: var(--c-ink); color: var(--c-on-dark); }
+    .section-head { display: grid; gap: var(--sp-4); max-width: 720px; margin-bottom: var(--sp-7); }
+    .section-head h2 { font-size: var(--fs-3xl); line-height: 1.12; letter-spacing: -0.03em; }
+    .section-head p { color: var(--c-muted); font-size: var(--fs-md); }
+    .section--dark .section-head p { color: var(--c-on-dark-muted); }
+    .section-head--split {
+      max-width: none; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--sp-5);
+    }
+    .section-head--split > div { display: grid; gap: var(--sp-4); max-width: 680px; }
+
+    .demo-note {
+      display: flex; align-items: flex-start; gap: var(--sp-2);
+      font-size: var(--fs-xs); color: var(--c-subtle); line-height: 1.5;
+    }
+    .demo-note .icon { width: 16px; height: 16px; margin-top: 1px; }
+
+    /* Reveal-on-scroll (only when JS is running) */
+    .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+    .js .reveal.is-visible { opacity: 1; transform: none; }
+
+    /* ==================================================================
+       4. DEMO BANNER + HEADER / NAVIGATION
+       ================================================================== */
+    .demo-banner {
+      background: var(--c-soft); border-bottom: 1px solid var(--c-line);
+      font-size: var(--fs-xs); color: var(--c-muted);
+    }
+    .demo-banner .container { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 38px; }
+    .demo-banner p { display: flex; align-items: center; gap: 8px; }
+    .demo-banner strong { color: var(--c-text); font-weight: 600; }
+    .demo-banner button {
+      width: 28px; height: 28px; border-radius: var(--r-xs); display: grid; place-items: center; color: var(--c-muted); flex: none;
+    }
+    .demo-banner button:hover { background: var(--c-soft-2); color: var(--c-text); }
+
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255, 255, 255, .96); backdrop-filter: saturate(1.4) blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    }
+    .site-header.is-scrolled { border-color: var(--c-line); box-shadow: var(--shadow-sm); }
+    .header-inner { display: flex; align-items: center; gap: var(--sp-5); height: var(--header-h); }
+
+    .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.125rem; letter-spacing: -0.02em; color: var(--c-text); }
+    .logo__mark { width: 32px; height: 32px; border-radius: 7px; background: var(--c-accent); display: grid; place-items: center; flex: none; }
+    .logo__mark svg { width: 18px; height: 18px; fill: #fff; }
+    .logo__text span { color: var(--c-muted); font-weight: 500; }
+    .logo--light { color: #fff; }
+    .logo--light .logo__text span { color: var(--c-on-dark-muted); }
+
+    .primary-nav { margin-left: auto; }
+    .primary-nav ul { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      display: inline-flex; align-items: center; height: 40px; padding: 0 12px; border-radius: var(--r-sm);
+      font-size: var(--fs-sm); font-weight: 500; color: var(--c-muted);
+      transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+      position: relative;
+    }
+    .nav-link:hover { color: var(--c-text); background: var(--c-soft); }
+    .nav-link.is-active { color: var(--c-text); }
+    .nav-link.is-active::after {
+      content: ""; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; background: var(--c-accent); border-radius: 2px;
+    }
+    .header-actions { display: flex; align-items: center; gap: var(--sp-2); }
+    .icon-btn {
+      position: relative; width: 42px; height: 42px; border-radius: var(--r-sm);
+      display: grid; place-items: center; color: var(--c-text);
+      transition: background-color var(--dur) var(--ease);
+    }
+    .icon-btn:hover { background: var(--c-soft); }
+    .count-badge {
+      position: absolute; top: 4px; right: 3px; min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: var(--r-pill); background: var(--c-accent); color: #fff;
+      font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+      transform: scale(1); transition: transform var(--dur) var(--ease);
+    }
+    .count-badge.is-empty { transform: scale(0); }
+    .count-badge.bump { animation: bump .35s var(--ease); }
+    @keyframes bump { 50% { transform: scale(1.3); } }
+    .menu-toggle { display: none; }
+
+    .mobile-menu {
+      display: none;
+      border-top: 1px solid var(--c-line); background: var(--c-bg);
+      padding: var(--sp-3) var(--gutter) var(--sp-5);
+    }
+    .mobile-menu.is-open { display: block; animation: drop .22s var(--ease); }
+    @keyframes drop { from { opacity: 0; transform: translateY(-6px); } }
+    .mobile-menu ul { display: grid; gap: 2px; margin-bottom: var(--sp-4); }
+    .mobile-menu .nav-link { width: 100%; height: 48px; font-size: var(--fs-base); }
+    .mobile-menu .nav-link.is-active::after { display: none; }
+    .mobile-menu .nav-link.is-active { background: var(--c-soft); }
+    .mobile-menu__actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+
+    /* ==================================================================
+       5. HERO
+       ================================================================== */
+    .hero { background: var(--c-ink); color: var(--c-on-dark); padding-top: clamp(48px, 7vw, 96px); overflow: hidden; }
+    .hero__grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+    .hero__kicker {
+      display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px;
+      border: 1px solid var(--c-ink-line); border-radius: var(--r-pill);
+      font-size: var(--fs-xs); font-weight: 500; color: var(--c-on-dark-muted); margin-bottom: var(--sp-5);
+    }
+    .hero__kicker b { background: var(--c-accent); color: #fff; padding: 2px 8px; border-radius: var(--r-pill); font-weight: 600; letter-spacing: .04em; }
+    .hero h1 { font-size: var(--fs-hero); line-height: var(--lh-tight); letter-spacing: -0.04em; font-weight: 600; color: #fff; }
+    .hero h1 span { color: var(--c-accent); display: block; }
+    .hero__lead { margin-top: var(--sp-5); font-size: clamp(1.0625rem, 1.4vw, 1.1875rem); color: var(--c-on-dark-muted); max-width: 540px; }
+    .hero__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+    .hero__disclaimer { margin-top: var(--sp-5); font-size: var(--fs-xs); color: var(--c-subtle); display: flex; gap: 8px; align-items: center; }
+
+    .hero__visual { position: relative; }
+    .hero__image {
+      position: relative; aspect-ratio: 4 / 4.4; border-radius: var(--r-xl); overflow: hidden;
+      background: var(--c-ink-2); border: 1px solid var(--c-ink-line);
+    }
+    .hero__image img { width: 100%; height: 100%; object-fit: cover; }
+    .hero__image::after { content: ""; position: absolute; inset: 0; background: rgba(17, 19, 23, .12); pointer-events: none; }
+    .hero__card {
+      position: absolute; left: clamp(-32px, -2vw, -12px); bottom: 32px; z-index: 2;
+      width: min(320px, 82%); background: var(--c-bg); color: var(--c-text);
+      border-radius: var(--r-lg); padding: var(--sp-5); box-shadow: var(--shadow-lg);
+    }
+    .hero__card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-3); }
+    .hero__card h3 { font-size: var(--fs-lg); }
+    .hero__card p.loc { font-size: var(--fs-sm); color: var(--c-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .hero__card dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin: var(--sp-4) 0; padding-top: var(--sp-4); border-top: 1px solid var(--c-line); }
+    .hero__card dt { font-size: var(--fs-xs); color: var(--c-subtle); }
+    .hero__card dd { font-weight: 600; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+    .hero__tag { position: absolute; top: 20px; right: 20px; z-index: 2; }
+
+    .hero__stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      margin-top: clamp(48px, 7vw, 96px); border-top: 1px solid var(--c-ink-line);
+    }
+    .stat { padding: var(--sp-6) var(--sp-5) var(--sp-7) 0; }
+    .stat + .stat { padding-left: var(--sp-5); border-left: 1px solid var(--c-ink-line); }
+    .stat__value { font-size: clamp(2rem, 3.6vw, 2.75rem); font-weight: 600; letter-spacing: -0.03em; color: #fff; line-height: 1; }
+    .stat__label { margin-top: var(--sp-3); font-weight: 600; color: var(--c-on-dark); font-size: var(--fs-sm); }
+    .stat__desc { margin-top: 4px; font-size: var(--fs-sm); color: var(--c-on-dark-muted); }
+    .hero__stats-note { grid-column: 1 / -1; padding-bottom: var(--sp-5); font-size: var(--fs-xs); color: var(--c-subtle); }
+
+    /* ==================================================================
+       6. PROPERTY CARDS
+       ================================================================== */
+    .grid { display: grid; gap: var(--sp-5); }
+    .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      display: flex; flex-direction: column; background: var(--c-bg);
+      border: 1px solid var(--c-line); border-radius: var(--r-lg); overflow: hidden;
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .card:hover { border-color: var(--c-line-strong); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .card.is-entering { animation: cardIn .4s var(--ease) both; }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } }
+    .card__media { position: relative; aspect-ratio: 4 / 3; background: var(--c-ink-2); overflow: hidden; }
+    .card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--ease); }
+    .card:hover .card__media img { transform: scale(1.035); }
+    .card__media .tag { position: absolute; top: 14px; left: 14px; }
+    .watch-btn {
+      position: absolute; top: 10px; right: 10px;
+      width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+      background: rgba(255, 255, 255, .95); color: var(--c-text); box-shadow: var(--shadow-sm);
+      transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
+    }
+    .watch-btn:hover { transform: scale(1.06); }
+    .watch-btn[aria-pressed="true"] { color: var(--c-accent); }
+    .watch-btn[aria-pressed="true"] .icon { fill: currentColor; }
+    .watch-btn.pop .icon { animation: bump .35s var(--ease); }
+
+    .card__body { display: flex; flex-direction: column; flex: 1; padding: var(--sp-5); }
+    .card__type { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-accent); }
+    .card__title { font-size: var(--fs-lg); margin-top: 6px; letter-spacing: -0.015em; }
+    .card__loc { display: flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--c-muted); font-size: var(--fs-sm); }
+    .card__metrics {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
+      margin-top: var(--sp-4); padding-block: var(--sp-4); border-block: 1px solid var(--c-line);
+    }
+    .card__metrics dt { font-size: var(--fs-xs); color: var(--c-subtle); }
+    .card__metrics dd { font-size: 1.1875rem; font-weight: 600; letter-spacing: -0.015em; margin-top: 2px; }
+    .card__footer { display: flex; flex-direction: column; gap: var(--sp-4); margin-top: auto; padding-top: var(--sp-4); }
+    .card__note { font-size: 11px; color: var(--c-subtle); margin-top: var(--sp-3); }
+
+    .occ { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 500; color: var(--c-text); }
+    .occ__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); flex: none; }
+    .occ--partial .occ__dot { background: transparent; border: 2px solid var(--c-accent); }
+    .occ--pre .occ__dot { background: var(--c-line-strong); }
+    .occ--na .occ__dot { background: var(--c-line-strong); }
+
+    /* ==================================================================
+       7. FILTERS
+       ================================================================== */
+    .filters {
+      background: var(--c-bg); border: 1px solid var(--c-line); border-radius: var(--r-lg);
+      padding: var(--sp-5); margin-bottom: var(--sp-6);
+    }
+    .filters__top { display: flex; gap: var(--sp-3); }
+    .search { position: relative; flex: 1; }
+    .search .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--c-subtle); pointer-events: none; }
+    .search input { padding-left: 44px; }
+    .filters__toggle { display: none; }
+    .filters__panel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
+    .filters__bar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3);
+      margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--c-line);
+    }
+    .result-count { font-size: var(--fs-sm); color: var(--c-muted); }
+    .result-count strong { color: var(--c-text); }
+    .filters__bar-right { display: flex; align-items: center; gap: var(--sp-3); }
+    .sort { display: flex; align-items: center; gap: var(--sp-2); }
+    .sort label { font-size: var(--fs-sm); color: var(--c-muted); white-space: nowrap; }
+    .sort select { width: auto; min-width: 210px; height: 40px; }
+
+    .empty-state {
+      grid-column: 1 / -1; text-align: center; padding: var(--sp-8) var(--sp-5);
+      border: 1px dashed var(--c-line-strong); border-radius: var(--r-lg); background: var(--c-bg);
+    }
+    .empty-state h3 { font-size: var(--fs-lg); }
+    .empty-state p { color: var(--c-muted); margin: var(--sp-2) auto var(--sp-5); max-width: 420px; }
+
+    /* ==================================================================
+       8. FORMS
+       ================================================================== */
+    .field { display: grid; gap: 6px; }
+    .field > label, .field-label { font-size: var(--fs-sm); font-weight: 500; color: var(--c-text); }
+    .field .req { color: var(--c-accent); }
+    .input, .select, .textarea {
+      width: 100%; height: 46px; padding: 0 14px;
+      background: var(--c-bg); border: 1px solid var(--c-line-strong); border-radius: var(--r-sm);
+      font-size: var(--fs-sm); color: var(--c-text);
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    }
+    .input::placeholder, .textarea::placeholder { color: var(--c-subtle); }
+    .input:hover, .select:hover, .textarea:hover { border-color: var(--c-subtle); }
+    .input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px rgba(3, 90, 247, .16); }
+    .select {
+      appearance: none; -webkit-appearance: none; padding-right: 38px; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555C68' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+    }
+    .textarea { height: auto; min-height: 128px; padding: 12px 14px; resize: vertical; line-height: 1.5; }
+    .field.has-error .input, .field.has-error .select, .field.has-error .textarea { border-color: var(--c-error); }
+    .field.has-error .input:focus, .field.has-error .select:focus, .field.has-error .textarea:focus { box-shadow: 0 0 0 3px rgba(180, 35, 24, .14); }
+    .field-error { display: none; font-size: var(--fs-xs); color: var(--c-error); font-weight: 500; }
+    .field.has-error .field-error { display: flex; align-items: center; gap: 6px; }
+    .field-hint { font-size: var(--fs-xs); color: var(--c-subtle); display: flex; justify-content: space-between; gap: 8px; }
+
+    .check { display: flex; gap: 12px; align-items: flex-start; font-size: var(--fs-sm); color: var(--c-muted); cursor: pointer; }
+    .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--c-accent); flex: none; cursor: pointer; }
+
+    /* Range */
+    .range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; background: transparent; cursor: pointer; }
+    .range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(var(--c-accent), var(--c-accent)) 0 / var(--fill, 50%) 100% no-repeat, var(--c-soft-2); }
+    .range::-moz-range-track { height: 4px; border-radius: 4px; background: var(--c-soft-2); }
+    .range::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--c-accent); }
+    .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: #fff; border: 2px solid var(--c-accent); box-shadow: var(--shadow-sm); }
+    .range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--c-accent); }
+    .range:focus { outline: none; }
+    .range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(3, 90, 247, .25); }
+    .range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(3, 90, 247, .25); }
+
+    /* ==================================================================
+       9. CALCULATOR
+       ================================================================== */
+    .calc {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      border: 1px solid var(--c-line); border-radius: var(--r-xl); overflow: hidden; background: var(--c-bg);
+    }
+    .calc.flash { animation: flash 1.2s var(--ease); }
+    @keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 rgba(3, 90, 247, 0); } 30% { box-shadow: 0 0 0 4px rgba(3, 90, 247, .3); } }
+    .calc__inputs { padding: clamp(24px, 4vw, 48px); display: grid; gap: var(--sp-6); align-content: start; }
+    .calc__field { display: grid; gap: var(--sp-2); }
+    .calc__field-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); }
+    .calc__field-top label { font-weight: 600; font-size: var(--fs-sm); }
+    .unit-input { position: relative; width: 150px; flex: none; }
+    .unit-input .input { height: 40px; padding-right: 48px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .unit-input span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: var(--fs-xs); color: var(--c-subtle); font-weight: 600; pointer-events: none; }
+    .calc__hint { font-size: var(--fs-xs); color: var(--c-subtle); display: flex; justify-content: space-between; }
+    .calc__warn { font-size: var(--fs-xs); color: var(--c-error); font-weight: 500; }
+
+    .calc__results { background: var(--c-ink); color: var(--c-on-dark); padding: clamp(24px, 4vw, 48px); display: flex; flex-direction: column; gap: var(--sp-5); }
+    .calc__results-label { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--c-on-dark-muted); }
+    .calc__headline { font-size: clamp(2.25rem, 4.5vw, 3.25rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+    .calc__headline-sub { font-size: var(--fs-sm); color: var(--c-on-dark-muted); margin-top: var(--sp-2); }
+    .bar { display: flex; height: 10px; border-radius: 10px; overflow: hidden; background: var(--c-ink-3); }
+    .bar__seg { height: 100%; transition: width .4s var(--ease); }
+    .bar__seg--noi { background: var(--c-accent); }
+    .bar__seg--opex { background: #5A616D; }
+    .bar-legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-xs); color: var(--c-on-dark-muted); margin-top: var(--sp-2); }
+    .bar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .bar-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+    .calc__rows { display: grid; }
+    .calc__rows > div { display: flex; justify-content: space-between; gap: var(--sp-4); padding: 12px 0; border-bottom: 1px solid var(--c-ink-line); font-size: var(--fs-sm); }
+    .calc__rows dt { color: var(--c-on-dark-muted); }
+    .calc__rows dd { font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; text-align: right; }
+    .calc__group-title { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-on-dark-muted); margin-top: var(--sp-2); }
+    .calc__share { border: 1px solid var(--c-ink-line); border-radius: var(--r-md); padding: var(--sp-4); }
+    .calc__share .calc__rows > div:last-child { border-bottom: 0; padding-bottom: 0; }
+    .calc__share-note { font-size: 11px; color: var(--c-subtle); margin-top: var(--sp-2); }
+
+    .disclaimer-box {
+      display: flex; gap: var(--sp-3); align-items: flex-start;
+      margin-top: var(--sp-5); padding: var(--sp-4) var(--sp-5);
+      border: 1px solid var(--c-line); border-left: 3px solid var(--c-accent); border-radius: var(--r-sm);
+      background: var(--c-bg); font-size: var(--fs-sm); color: var(--c-muted);
+    }
+    .disclaimer-box strong { color: var(--c-text); }
+    .disclaimer-box .icon { color: var(--c-accent); margin-top: 2px; }
+
+    /* ==================================================================
+       10. HOW IT WORKS / FEATURES / ABOUT
+       ================================================================== */
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--c-ink-line); }
+    .step { padding: var(--sp-6) var(--sp-5) var(--sp-5) 0; position: relative; }
+    .step + .step { padding-left: var(--sp-5); border-left: 1px solid var(--c-ink-line); }
+    .step::before { content: ""; position: absolute; top: -1px; left: 0; width: 48px; height: 2px; background: var(--c-accent); }
+    .step + .step::before { left: var(--sp-5); }
+    .step__num { font-size: var(--fs-sm); font-weight: 600; color: var(--c-on-dark-muted); font-variant-numeric: tabular-nums; }
+    .step h3 { font-size: var(--fs-lg); color: #fff; margin: var(--sp-6) 0 var(--sp-3); }
+    .step p { color: var(--c-on-dark-muted); font-size: var(--fs-sm); }
+    .notice-dark {
+      margin-top: var(--sp-7); display: flex; gap: var(--sp-3); align-items: flex-start;
+      padding: var(--sp-4) var(--sp-5); border: 1px solid var(--c-ink-line); border-radius: var(--r-md);
+      font-size: var(--fs-sm); color: var(--c-on-dark-muted);
+    }
+    .notice-dark .icon { color: var(--c-accent); margin-top: 2px; }
+    .notice-dark strong { color: #fff; }
+
+    .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--c-line); border-left: 1px solid var(--c-line); }
+    .feature { padding: var(--sp-6); border-right: 1px solid var(--c-line); border-bottom: 1px solid var(--c-line); background: var(--c-bg); transition: background-color var(--dur) var(--ease); }
+    .feature:hover { background: var(--c-soft); }
+    .feature__icon { width: 44px; height: 44px; border-radius: var(--r-md); background: var(--c-accent-tint); color: var(--c-accent); display: grid; place-items: center; }
+    .feature h3 { font-size: var(--fs-lg); margin: var(--sp-5) 0 var(--sp-2); }
+    .feature p { color: var(--c-muted); font-size: var(--fs-sm); }
+
+    .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
+    .about__copy { display: grid; gap: var(--sp-5); }
+    .about__copy h2 { font-size: var(--fs-3xl); line-height: 1.12; letter-spacing: -0.03em; }
+    .about__copy p { color: var(--c-muted); font-size: var(--fs-md); }
+    .principles { display: grid; gap: var(--sp-4); margin-top: var(--sp-2); }
+    .principles li { display: grid; grid-template-columns: 28px 1fr; gap: var(--sp-3); }
+    .principles .icon { color: var(--c-accent); margin-top: 3px; }
+    .principles strong { display: block; color: var(--c-text); font-weight: 600; }
+    .principles span { color: var(--c-muted); font-size: var(--fs-sm); }
+    .about__media { position: relative; display: grid; gap: var(--sp-4); }
+    .about__img { aspect-ratio: 5 / 4; border-radius: var(--r-xl); overflow: hidden; background: var(--c-ink-2); }
+    .about__img img { width: 100%; height: 100%; object-fit: cover; }
+    .is-isnt { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--c-line); border-radius: var(--r-lg); overflow: hidden; }
+    .is-isnt > div { padding: var(--sp-5); }
+    .is-isnt > div + div { border-left: 1px solid var(--c-line); background: var(--c-soft); }
+    .is-isnt h3 { font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .1em; margin-bottom: var(--sp-3); }
+    .is-isnt li { display: flex; gap: 8px; font-size: var(--fs-sm); color: var(--c-muted); padding: 4px 0; }
+    .is-isnt li .icon { width: 16px; height: 16px; margin-top: 3px; color: var(--c-accent); }
+    .is-isnt > div + div li .icon { color: var(--c-subtle); }
+
+    /* ==================================================================
+       11. CONTACT
+       ================================================================== */
+    .contact { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 96px); }
+    .contact__info { display: grid; gap: var(--sp-6); align-content: start; }
+    .contact__list { display: grid; gap: var(--sp-5); }
+    .contact__list li { display: grid; grid-template-columns: 44px 1fr; gap: var(--sp-4); align-items: start; }
+    .contact__list .feature__icon { width: 44px; height: 44px; }
+    .contact__list dt { font-size: var(--fs-xs); color: var(--c-subtle); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+    .contact__list dd { font-weight: 500; }
+    .contact__list dd small { display: block; color: var(--c-subtle); font-size: var(--fs-xs); font-weight: 400; }
+    .form-card { background: var(--c-bg); border: 1px solid var(--c-line); border-radius: var(--r-xl); padding: clamp(24px, 4vw, 44px); box-shadow: var(--shadow-sm); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); }
+    .form-grid .span-2 { grid-column: 1 / -1; }
+    .form-alert { display: flex; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-sm); font-size: var(--fs-sm); }
+    .form-alert--info { background: var(--c-soft); color: var(--c-muted); }
+    .form-alert--error { background: var(--c-error-tint); color: var(--c-error); }
+    .form-alert .icon { margin-top: 2px; }
+    .form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-4); }
+    .form-actions p { font-size: var(--fs-xs); color: var(--c-subtle); max-width: 360px; }
+    .success { text-align: center; padding: var(--sp-6) var(--sp-3); }
+    .success__icon { width: 64px; height: 64px; border-radius: 50%; background: var(--c-accent-tint); color: var(--c-accent); display: grid; place-items: center; margin: 0 auto var(--sp-5); }
+    .success__icon .icon { width: 30px; height: 30px; stroke-width: 2; }
+    .success h3 { font-size: var(--fs-xl); }
+    .success p { color: var(--c-muted); max-width: 460px; margin: var(--sp-3) auto 0; }
+    .success .summary { margin: var(--sp-5) auto; max-width: 420px; text-align: left; border: 1px solid var(--c-line); border-radius: var(--r-md); padding: var(--sp-4); font-size: var(--fs-sm); }
+    .success .summary div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 4px 0; }
+    .success .summary dt { color: var(--c-subtle); }
+    .success .summary dd { font-weight: 500; text-align: right; }
+
+    /* ==================================================================
+       12. FOOTER
+       ================================================================== */
+    .site-footer { background: var(--c-ink); color: var(--c-on-dark-muted); padding-top: var(--sp-9); font-size: var(--fs-sm); }
+    .footer-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: var(--sp-7); padding-bottom: var(--sp-8); }
+    .footer-brand p { margin-top: var(--sp-4); max-width: 340px; }
+    .footer-col h3 { color: #fff; font-size: var(--fs-sm); margin-bottom: var(--sp-4); }
+    .footer-col ul { display: grid; gap: 10px; }
+    .footer-col a, .footer-col button { color: var(--c-on-dark-muted); font-size: var(--fs-sm); text-align: left; transition: color var(--dur) var(--ease); }
+    .footer-col a:hover, .footer-col button:hover { color: #fff; }
+    .footer-bottom { border-top: 1px solid var(--c-ink-line); padding: var(--sp-5) 0 var(--sp-6); display: grid; gap: var(--sp-3); font-size: var(--fs-xs); color: var(--c-subtle); }
+    .footer-bottom__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-3); }
+
+    /* ==================================================================
+       13. MODAL
+       ================================================================== */
+    .modal { position: fixed; inset: 0; z-index: 100; }
+    .modal__backdrop { position: absolute; inset: 0; background: rgba(10, 12, 15, .64); opacity: 0; transition: opacity var(--dur) var(--ease); }
+    .modal__scroller { position: absolute; inset: 0; overflow-y: auto; display: flex; padding: clamp(12px, 4vw, 48px) clamp(12px, 3vw, 32px); overscroll-behavior: contain; }
+    .modal__panel {
+      position: relative; margin: auto; width: 100%; max-width: 560px;
+      background: var(--c-bg); border-radius: var(--r-xl); box-shadow: var(--shadow-lg);
+      opacity: 0; transform: translateY(16px) scale(.985);
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .modal__panel--lg { max-width: 1080px; }
+    .modal__panel--md { max-width: 720px; }
+    .modal.is-open .modal__backdrop { opacity: 1; }
+    .modal.is-open .modal__panel { opacity: 1; transform: none; }
+    .modal__close {
+      position: absolute; top: 14px; right: 14px; z-index: 3;
+      width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+      background: rgba(255, 255, 255, .95); color: var(--c-text); box-shadow: var(--shadow-sm);
+      transition: background-color var(--dur) var(--ease);
+    }
+    .modal__close:hover { background: var(--c-soft-2); }
+    .modal__content { padding: clamp(24px, 4vw, 40px); }
+    .modal__content h2 { font-size: var(--fs-2xl); letter-spacing: -0.025em; padding-right: 40px; }
+    .modal__content .lead { color: var(--c-muted); margin-top: var(--sp-3); }
+    .prose { color: var(--c-muted); font-size: var(--fs-sm); display: grid; gap: var(--sp-4); margin-top: var(--sp-5); }
+    .prose h3 { color: var(--c-text); font-size: var(--fs-base); margin-top: var(--sp-2); }
+    .prose ul { display: grid; gap: 6px; padding-left: 18px; list-style: disc; }
+    .prose strong { color: var(--c-text); }
+    .modal__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+
+    /* Property detail */
+    .pm__media { position: relative; aspect-ratio: 21 / 9; background: var(--c-ink-2); border-radius: var(--r-xl) var(--r-xl) 0 0; overflow: hidden; }
+    .pm__media img { width: 100%; height: 100%; object-fit: cover; }
+    .pm__media .tag { position: absolute; left: 20px; bottom: 20px; }
+    .pm__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-4); padding: var(--sp-6) clamp(24px, 4vw, 40px) var(--sp-5); border-bottom: 1px solid var(--c-line); }
+    .pm__head h2 { font-size: var(--fs-2xl); letter-spacing: -0.025em; margin-top: 6px; }
+    .pm__loc { display: flex; align-items: center; gap: 6px; color: var(--c-muted); font-size: var(--fs-sm); margin-top: 6px; }
+    .save-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1px solid var(--c-line-strong); border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 600; flex: none; transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease); }
+    .save-btn:hover { border-color: var(--c-text); }
+    .save-btn[aria-pressed="true"] { color: var(--c-accent); border-color: var(--c-accent); }
+    .save-btn[aria-pressed="true"] .icon { fill: currentColor; }
+    .pm__grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 48px); padding: var(--sp-6) clamp(24px, 4vw, 40px) clamp(24px, 4vw, 40px); }
+    .pm__main { display: grid; gap: var(--sp-6); align-content: start; }
+    .pm__main h3 { font-size: var(--fs-base); margin-bottom: var(--sp-3); }
+    .pm__main p { color: var(--c-muted); font-size: var(--fs-sm); }
+    .pm__highlights { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--sp-4); }
+    .facts { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--c-line); border-radius: var(--r-md); overflow: hidden; }
+    .facts > div { padding: 12px 16px; border-bottom: 1px solid var(--c-line); }
+    .facts > div:nth-child(odd) { border-right: 1px solid var(--c-line); }
+    .facts > div:nth-last-child(-n+2) { border-bottom: 0; }
+    .facts dt { font-size: var(--fs-xs); color: var(--c-subtle); }
+    .facts dd { font-size: var(--fs-sm); font-weight: 500; margin-top: 2px; }
+    .risk-list { display: grid; gap: 10px; }
+    .risk-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: var(--fs-sm); color: var(--c-muted); }
+    .risk-list .icon { width: 18px; height: 18px; color: var(--c-text); margin-top: 1px; }
+
+    .fin { position: sticky; top: 16px; align-self: start; border: 1px solid var(--c-line); border-radius: var(--r-lg); padding: var(--sp-5); background: var(--c-soft); }
+    .fin__label { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-subtle); }
+    .fin__price { margin-top: var(--sp-3); padding-bottom: var(--sp-4); border-bottom: 1px solid var(--c-line-strong); }
+    .fin__price span { font-size: var(--fs-sm); color: var(--c-muted); }
+    .fin__price strong { display: block; font-size: 2rem; letter-spacing: -0.03em; font-weight: 600; line-height: 1.15; }
+    .fin__price small { font-size: var(--fs-xs); color: var(--c-subtle); font-variant-numeric: tabular-nums; }
+    .fin__rows > div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 11px 0; border-bottom: 1px solid var(--c-line); font-size: var(--fs-sm); }
+    .fin__rows dt { color: var(--c-muted); }
+    .fin__rows dt small { display: block; font-size: 11px; color: var(--c-subtle); }
+    .fin__rows dd { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .fin__rows .is-total { border-bottom: 0; border-top: 2px solid var(--c-text); margin-top: -1px; padding-top: 14px; }
+    .fin__rows .is-total dt { color: var(--c-text); font-weight: 600; }
+    .fin__rows .is-total dd { font-size: var(--fs-lg); color: var(--c-accent); }
+    .fin__explain { font-size: var(--fs-xs); color: var(--c-muted); background: var(--c-bg); border: 1px solid var(--c-line); border-radius: var(--r-sm); padding: 12px; margin: var(--sp-3) 0 var(--sp-4); line-height: 1.55; }
+    .fin__explain strong { color: var(--c-text); }
+    .fin .btn + .btn { margin-top: var(--sp-2); }
+    .fin__disclaimer { font-size: 11px; color: var(--c-subtle); margin-top: var(--sp-3); line-height: 1.5; }
+
+    /* Watchlist */
+    .wl { display: grid; gap: var(--sp-3); margin-top: var(--sp-5); }
+    .wl__item { display: grid; grid-template-columns: 88px 1fr auto; gap: var(--sp-4); align-items: center; padding: var(--sp-3); border: 1px solid var(--c-line); border-radius: var(--r-md); }
+    .wl__thumb { width: 88px; height: 66px; border-radius: var(--r-sm); overflow: hidden; background: var(--c-ink-2); }
+    .wl__thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .wl__item h3 { font-size: var(--fs-base); }
+    .wl__item p { font-size: var(--fs-xs); color: var(--c-muted); }
+    .wl__actions { display: flex; gap: var(--sp-2); }
+    .wl__empty { text-align: center; padding: var(--sp-7) var(--sp-4); border: 1px dashed var(--c-line-strong); border-radius: var(--r-md); margin-top: var(--sp-5); }
+    .wl__empty p { color: var(--c-muted); font-size: var(--fs-sm); margin: var(--sp-2) 0 var(--sp-5); }
+
+    /* ==================================================================
+       14. TOAST + BACK TO TOP
+       ================================================================== */
+    .toast-region { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 150; display: grid; gap: 8px; width: max-content; max-width: calc(100vw - 32px); pointer-events: none; }
+    .toast {
+      display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: var(--r-md);
+      background: var(--c-ink); color: #fff; font-size: var(--fs-sm); box-shadow: var(--shadow-lg);
+      animation: toastIn .3s var(--ease) both;
+    }
+    .toast .icon { color: var(--c-accent); }
+    .toast.is-leaving { animation: toastOut .25s var(--ease) both; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } }
+    @keyframes toastOut { to { opacity: 0; transform: translateY(10px); } }
+
+    .back-to-top {
+      position: fixed; right: 24px; bottom: 24px; z-index: 40;
+      width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--c-ink); color: #fff; box-shadow: var(--shadow-md);
+      opacity: 0; visibility: hidden; transform: translateY(12px);
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), visibility var(--dur), background-color var(--dur) var(--ease);
+    }
+    .back-to-top.is-visible { opacity: 1; visibility: visible; transform: none; }
+    .back-to-top:hover { background: var(--c-accent); }
+
+    /* ==================================================================
+       15. RESPONSIVE
+       ================================================================== */
+    @media (max-width: 1180px) {
+      .grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filters__panel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1060px) {
+      .primary-nav, .header-actions .btn--ghost { display: none; }
+      .menu-toggle { display: grid; }
+      .header-actions { margin-left: auto; }
+      .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero__grid { grid-template-columns: 1fr; }
+      .hero__visual { max-width: 640px; }
+      .hero__image { aspect-ratio: 16 / 11; }
+      .hero__card { left: 16px; }
+      .calc { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .step:nth-child(3) { padding-left: 0; border-left: 0; }
+      .step:nth-child(3)::before { left: 0; }
+      .step:nth-child(n+3) { border-top: 1px solid var(--c-ink-line); }
+      .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .about, .contact { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr 1fr; }
+      .footer-brand { grid-column: 1 / -1; }
+      .pm__grid { grid-template-columns: 1fr; }
+      .fin { position: static; }
+    }
+    @media (max-width: 760px) {
+      :root { --header-h: 64px; }
+      .header-actions .btn--primary { display: none; }
+      .section-head--split { grid-template-columns: 1fr; }
+      .hero__stats { grid-template-columns: 1fr; }
+      .stat { padding: var(--sp-5) 0; }
+      .stat + .stat { padding-left: 0; border-left: 0; border-top: 1px solid var(--c-ink-line); }
+      .hero__card { position: relative; left: auto; bottom: auto; width: auto; margin: -56px 16px 0; }
+      .grid--4, .grid--3 { grid-template-columns: 1fr; }
+      .filters { padding: var(--sp-4); }
+      .filters__toggle { display: inline-flex; }
+      .filters__panel { display: none; grid-template-columns: 1fr 1fr; }
+      .filters__panel.is-open { display: grid; }
+      .filters__bar { flex-direction: column; align-items: stretch; }
+      .filters__bar-right { flex-wrap: wrap; }
+      .sort { flex: 1; }
+      .sort select { min-width: 0; flex: 1; }
+      .steps, .features { grid-template-columns: 1fr; }
+      .step, .step + .step { padding-left: 0; border-left: 0; }
+      .step + .step { border-top: 1px solid var(--c-ink-line); }
+      .step + .step::before { left: 0; }
+      .step h3 { margin-top: var(--sp-4); }
+      .form-grid { grid-template-columns: 1fr; }
+      .is-isnt { grid-template-columns: 1fr; }
+      .is-isnt > div + div { border-left: 0; border-top: 1px solid var(--c-line); }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+      .pm__media { aspect-ratio: 16 / 10; }
+      .pm__head { flex-direction: column; }
+      .facts { grid-template-columns: 1fr; }
+      .facts > div:nth-child(odd) { border-right: 0; }
+      .facts > div:nth-last-child(2) { border-bottom: 1px solid var(--c-line); }
+      .wl__item { grid-template-columns: 64px 1fr; }
+      .wl__thumb { width: 64px; height: 52px; }
+      .wl__actions { grid-column: 1 / -1; }
+      .wl__actions .btn { flex: 1; }
+      .back-to-top { right: 16px; bottom: 16px; }
+      .unit-input { width: 136px; }
+    }
+    @media (max-width: 420px) {
+      .filters__panel { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero__ctas .btn { flex: 1; }
+      .demo-banner p span.long { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      .js .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ================================================================
+       SVG ICON SPRITE
+       ================================================================ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.3s-7.4-4.5-9.2-9C1.5 8 3.5 4.6 7 4.6c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.5 0 5.5 3.4 4.2 6.7-1.8 4.5-9.2 9-9.2 9z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3L12 4zM12 10v4M12 17.2v.1"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/><path d="M8 9h8M8 12h5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.1"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5"/></symbol>
+    <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h.01M12 11h.01M16 11h.01M8 14.5h.01M12 14.5h.01M16 14.5h.01M8 18h.01M12 18h.01M16 18h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ================================================================
+       DEMO BANNER
+       ================================================================ -->
+  <div class="demo-banner" id="demo-banner" role="region" aria-label="Prototype notice">
+    <div class="container">
+      <p>
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-info"/></svg>
+        <span><strong>Prototype.</strong> All listings, figures and statistics are fictional demonstrations. <span class="long">Nothing on this site is an investment offer.</span></span>
+      </p>
+      <button type="button" data-action="dismiss-banner" aria-label="Dismiss prototype notice">
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       HEADER
+       ================================================================ -->
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a href="#home" class="logo" aria-label="SV Realtor — home">
+        <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V10h3.5v9zM10.25 19V5h3.5v14zM15.5 19v-6H19v6z"/></svg></span>
+        <span class="logo__text">SV <span>Realtor</span></span>
+      </a>
+
+      <nav class="primary-nav" aria-label="Primary">
+        <ul>
+          <li><a class="nav-link" href="#home" data-nav="home">Home</a></li>
+          <li><a class="nav-link" href="#properties" data-nav="properties">Properties</a></li>
+          <li><a class="nav-link" href="#how-it-works" data-nav="how-it-works">How It Works</a></li>
+          <li><a class="nav-link" href="#about" data-nav="about">About</a></li>
+          <li><a class="nav-link" href="#contact" data-nav="contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <button type="button" class="icon-btn" data-action="open-watchlist" aria-label="Open watchlist, 0 saved properties" id="watchlist-btn">
+          <svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg>
+          <span class="count-badge is-empty" id="watchlist-count" aria-hidden="true">0</span>
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="open-login">Login</button>
+        <a href="#properties" class="btn btn--primary btn--sm">Explore Properties</a>
+        <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-menu" id="mobile-menu">
+      <nav aria-label="Mobile">
+        <ul>
+          <li><a class="nav-link" href="#home" data-nav="home">Home</a></li>
+          <li><a class="nav-link" href="#properties" data-nav="properties">Properties</a></li>
+          <li><a class="nav-link" href="#how-it-works" data-nav="how-it-works">How It Works</a></li>
+          <li><a class="nav-link" href="#about" data-nav="about">About</a></li>
+          <li><a class="nav-link" href="#contact" data-nav="contact">Contact</a></li>
+        </ul>
+      </nav>
+      <div class="mobile-menu__actions">
+        <button type="button" class="btn btn--outline" data-action="open-login">Login</button>
+        <a href="#properties" class="btn btn--primary">Explore Properties</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ==============================================================
+         HERO
+         ============================================================== -->
+    <section class="hero" id="home" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero__grid">
+          <div class="hero__copy">
+            <p class="hero__kicker"><b>PUNE</b> Commercial property discovery</p>
+            <h1 id="hero-title" tabindex="-1">Commercial Real Estate. <span>Within Reach.</span></h1>
+            <p class="hero__lead">Discover income-generating commercial property opportunities across Pune. Explore property fundamentals, rental potential, and investment considerations in one place.</p>
+            <div class="hero__ctas">
+              <a href="#properties" class="btn btn--primary btn--lg">Explore Properties <svg class="icon icon--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              <a href="#how-it-works" class="btn btn--outline-light btn--lg">How It Works</a>
+            </div>
+            <p class="hero__disclaimer"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-info"/></svg> Demonstration prototype — listings and figures are fictional.</p>
+          </div>
+
+          <div class="hero__visual">
+            <div class="hero__image">
+              <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"
+                   alt="Glass-fronted commercial office towers viewed from street level (stock photography)"
+                   data-label="Commercial office, Pune" width="1400" height="1540" fetchpriority="high">
+              <span class="tag tag--demo hero__tag">Stock imagery</span>
+            </div>
+            <div class="hero__card" id="hero-card"><!-- filled by JS --></div>
+          </div>
+        </div>
+
+        <div class="hero__stats" id="hero-stats" aria-label="Illustrative platform statistics"><!-- filled by JS --></div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         FEATURED PROPERTIES
+         ============================================================== -->
+    <section class="section" id="featured" aria-labelledby="featured-title">
+      <div class="container">
+        <div class="section-head section-head--split reveal">
+          <div>
+            <span class="eyebrow">Featured opportunities</span>
+            <h2 id="featured-title">Selected commercial assets across Pune's growth corridors</h2>
+            <p>Four demonstration listings from Pune's key office micro-markets. Every price and yield shown is illustrative.</p>
+          </div>
+          <a href="#properties" class="btn btn--outline">View all properties <svg class="icon icon--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
+        <div class="grid grid--4" id="featured-grid"><!-- filled by JS --></div>
+        <p class="demo-note" style="margin-top:24px"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg> Fictional demonstration data. Property names, tenants, prices and yields are illustrative and do not describe real assets or offers. Photographs are generic stock imagery.</p>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         PROPERTY EXPLORER (FILTERS)
+         ============================================================== -->
+    <section class="section section--soft" id="properties" aria-labelledby="properties-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Property explorer</span>
+          <h2 id="properties-title" tabindex="-1">Explore all properties</h2>
+          <p>Search and filter the full set of demonstration listings by micro-market, asset type, price, gross rental yield and occupancy.</p>
+        </div>
+
+        <form class="filters" id="filters" role="search" aria-label="Filter properties" novalidate>
+          <div class="filters__top">
+            <div class="search">
+              <label for="f-search" class="visually-hidden">Search properties</label>
+              <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input class="input" type="search" id="f-search" name="q" placeholder="Search by name, locality or property type" autocomplete="off">
+            </div>
+            <button type="button" class="btn btn--outline filters__toggle" id="filters-toggle" aria-expanded="false" aria-controls="filters-panel">
+              <svg class="icon icon--sm" aria-hidden="true"><use href="#i-filter"/></svg> Filters <span id="filters-active-count"></span>
+            </button>
+          </div>
+
+          <div class="filters__panel" id="filters-panel">
+            <div class="field">
+              <label for="f-location">Location</label>
+              <select class="select" id="f-location" name="location"><option value="all">All locations</option></select>
+            </div>
+            <div class="field">
+              <label for="f-type">Property type</label>
+              <select class="select" id="f-type" name="type"><option value="all">All types</option></select>
+            </div>
+            <div class="field">
+              <label for="f-price">Price range</label>
+              <select class="select" id="f-price" name="price">
+                <option value="all">Any price</option>
+                <option value="u25">Under ₹25 Cr</option>
+                <option value="25-50">₹25 Cr – ₹50 Cr</option>
+                <option value="50-100">₹50 Cr – ₹100 Cr</option>
+                <option value="o100">Above ₹100 Cr</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-yield">Gross rental yield</label>
+              <select class="select" id="f-yield" name="yield">
+                <option value="all">Any yield</option>
+                <option value="u7">Below 7%</option>
+                <option value="7-8">7% – 8%</option>
+                <option value="8-9">8% – 9%</option>
+                <option value="o9">9% and above</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-occupancy">Occupancy status</label>
+              <select class="select" id="f-occupancy" name="occupancy"><option value="all">Any status</option></select>
+            </div>
+          </div>
+
+          <div class="filters__bar">
+            <p class="result-count" id="result-count" aria-live="polite" aria-atomic="true"></p>
+            <div class="filters__bar-right">
+              <div class="sort">
+                <label for="f-sort">Sort by</label>
+                <select class="select" id="f-sort" name="sort">
+                  <option value="featured">Featured first</option>
+                  <option value="price-asc">Price: low to high</option>
+                  <option value="price-desc">Price: high to low</option>
+                  <option value="yield-desc">Gross rental yield: high to low</option>
+                </select>
+              </div>
+              <button type="reset" class="btn btn--outline btn--sm" id="filters-reset">Reset filters</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="grid grid--3" id="explore-grid"><!-- filled by JS --></div>
+        <p class="demo-note" style="margin-top:24px"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg> All listings are fictional demonstrations. Gross rental yield is annual rent before any costs, divided by the illustrative asking price.</p>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         INVESTMENT CALCULATOR
+         ============================================================== -->
+    <section class="section" id="calculator" aria-labelledby="calc-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Illustrative calculator</span>
+          <h2 id="calc-title" tabindex="-1">See how gross rent becomes operating income</h2>
+          <p>Adjust the assumptions to understand the arithmetic behind commercial property yields. Results update instantly and are purely educational.</p>
+        </div>
+
+        <div class="calc reveal" id="calc">
+          <form class="calc__inputs" id="calc-form" novalidate aria-label="Calculator inputs">
+            <div class="calc__field">
+              <div class="calc__field-top">
+                <label for="c-value-n">Property value</label>
+                <div class="unit-input">
+                  <input class="input" type="number" id="c-value-n" min="1" max="5000" step="0.5" value="50" inputmode="decimal" aria-describedby="c-value-hint">
+                  <span aria-hidden="true">₹ Cr</span>
+                </div>
+              </div>
+              <input class="range" type="range" id="c-value-r" min="1" max="500" step="0.5" value="50" aria-label="Property value in crore rupees, slider">
+              <p class="calc__hint" id="c-value-hint"><span data-out="value-full"></span><span>₹1 Cr – ₹500 Cr</span></p>
+            </div>
+
+            <div class="calc__field">
+              <div class="calc__field-top">
+                <label for="c-invest-n">Hypothetical investment amount</label>
+                <div class="unit-input">
+                  <input class="input" type="number" id="c-invest-n" min="0" max="100000" step="1" value="10" inputmode="decimal" aria-describedby="c-invest-hint c-invest-warn">
+                  <span aria-hidden="true">₹ L</span>
+                </div>
+              </div>
+              <input class="range" type="range" id="c-invest-r" min="1" max="1000" step="1" value="10" aria-label="Hypothetical investment amount in lakh rupees, slider">
+              <p class="calc__hint" id="c-invest-hint"><span data-out="invest-full"></span><span>₹1 L – ₹10 Cr</span></p>
+              <p class="calc__warn" id="c-invest-warn" role="alert" hidden>The hypothetical investment cannot exceed the property value. The share is capped at 100%.</p>
+            </div>
+
+            <div class="calc__field">
+              <div class="calc__field-top">
+                <label for="c-yield-n">Annual gross rental yield</label>
+                <div class="unit-input">
+                  <input class="input" type="number" id="c-yield-n" min="0" max="20" step="0.1" value="8" inputmode="decimal">
+                  <span aria-hidden="true">%</span>
+                </div>
+              </div>
+              <input class="range" type="range" id="c-yield-r" min="0" max="15" step="0.1" value="8" aria-label="Annual gross rental yield percentage, slider">
+              <p class="calc__hint"><span>Annual rent ÷ property value</span><span>0% – 15%</span></p>
+            </div>
+
+            <div class="calc__field">
+              <div class="calc__field-top">
+                <label for="c-opex-n">Operating costs (% of gross rent)</label>
+                <div class="unit-input">
+                  <input class="input" type="number" id="c-opex-n" min="0" max="100" step="1" value="12" inputmode="decimal">
+                  <span aria-hidden="true">%</span>
+                </div>
+              </div>
+              <input class="range" type="range" id="c-opex-r" min="0" max="60" step="1" value="12" aria-label="Operating costs as a percentage of gross rent, slider">
+              <p class="calc__hint"><span>Maintenance, property tax, insurance, management</span><span>0% – 60%</span></p>
+            </div>
+
+            <button type="reset" class="btn btn--outline btn--sm" style="justify-self:start">Reset to defaults</button>
+          </form>
+
+          <div class="calc__results" aria-live="polite" aria-label="Calculator results">
+            <div>
+              <p class="calc__results-label">Estimated annual operating income</p>
+              <p class="calc__headline" data-out="noi">—</p>
+              <p class="calc__headline-sub">Whole property · before tax and financing</p>
+            </div>
+            <div>
+              <div class="bar" aria-hidden="true">
+                <span class="bar__seg bar__seg--noi" data-out="bar-noi" style="width:88%"></span>
+                <span class="bar__seg bar__seg--opex" data-out="bar-opex" style="width:12%"></span>
+              </div>
+              <div class="bar-legend" aria-hidden="true">
+                <span><i style="background:var(--c-accent)"></i>Operating income</span>
+                <span><i style="background:#5A616D"></i>Operating costs</span>
+              </div>
+            </div>
+            <dl class="calc__rows">
+              <div><dt>Hypothetical annual gross rent</dt><dd data-out="gross">—</dd></div>
+              <div><dt>Less operating costs</dt><dd data-out="opex">—</dd></div>
+              <div><dt>Illustrative gross yield</dt><dd data-out="gross-yield">—</dd></div>
+              <div><dt>Illustrative operating yield</dt><dd data-out="op-yield">—</dd></div>
+            </dl>
+            <div class="calc__share">
+              <p class="calc__group-title">Proportional example — mathematics only</p>
+              <dl class="calc__rows">
+                <div><dt>Hypothetical ownership percentage</dt><dd data-out="ownership">—</dd></div>
+                <div><dt>Proportional share of gross rent</dt><dd data-out="share-gross">—</dd></div>
+                <div><dt>Proportional share of operating income</dt><dd data-out="share-noi">—</dd></div>
+              </dl>
+              <p class="calc__share-note">Investment amount ÷ property value. This does not represent a legal interest, unit, or entitlement of any kind.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="disclaimer-box">
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <p><strong>Educational tool only.</strong> This calculator performs simple arithmetic on the numbers you enter. It does not establish legal ownership, an investment entitlement, or any right to income, and it does not predict or guarantee returns. Real outcomes depend on vacancies, tenant defaults, taxes, fees, financing, capital expenditure, valuation changes and liquidity, none of which are modelled here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         HOW IT WORKS
+         ============================================================== -->
+    <section class="section section--dark" id="how-it-works" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">How it works</span>
+          <h2 id="how-title" tabindex="-1">From discovery to an informed conversation</h2>
+          <p>SV Realtor is designed to help you understand commercial property before you speak to anyone about it.</p>
+        </div>
+        <ol class="steps reveal">
+          <li class="step">
+            <span class="step__num">01</span>
+            <h3>Discover commercial properties</h3>
+            <p>Browse curated demonstration listings across Pune's office, retail and logistics micro-markets, and filter by location, type, price and yield.</p>
+          </li>
+          <li class="step">
+            <span class="step__num">02</span>
+            <h3>Review property information and risks</h3>
+            <p>Read the fundamentals side by side: tenant profile, lease terms, gross rent, cost assumptions and the specific risks attached to each property.</p>
+          </li>
+          <li class="step">
+            <span class="step__num">03</span>
+            <h3>Submit an enquiry</h3>
+            <p>Tell us which property you would like to know more about. In this prototype, enquiries stay in your browser and are not sent anywhere.</p>
+          </li>
+          <li class="step">
+            <span class="step__num">04</span>
+            <h3>Explore next steps with professionals</h3>
+            <p>Any real transaction would require independent legal, tax and financial advice, proper due diligence, and appropriately qualified or registered intermediaries.</p>
+          </li>
+        </ol>
+        <div class="notice-dark">
+          <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+          <p><strong>No transactions happen here.</strong> This prototype does not offer, sell, or facilitate fractional ownership, units, securities, or any other investment product, and users cannot buy any interest in a property through it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         WHY SV REALTOR
+         ============================================================== -->
+    <section class="section" id="why" aria-labelledby="why-title">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Why SV Realtor</span>
+          <h2 id="why-title">Built around clarity, not hype</h2>
+          <p>The concept is simple: show the numbers, show how they were derived, and be explicit about what could go wrong.</p>
+        </div>
+        <div class="features reveal">
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg></div>
+            <h3>Pune-focused property research</h3>
+            <p>Depth before breadth. We start with Pune's commercial corridors — from Hinjewadi and Kharadi to Baner, Wakad and beyond — and the micro-market factors that shape them.</p>
+          </article>
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-calc"/></svg></div>
+            <h3>Transparent financial assumptions</h3>
+            <p>Every figure shows its inputs. Gross rent, assumed operating costs and the resulting operating income are itemised, never blended into a single headline number.</p>
+          </article>
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-building"/></svg></div>
+            <h3>Commercial property discovery</h3>
+            <p>Grade A offices, workspaces, high-street retail and logistics in one place, with consistent fields so properties can be compared like for like.</p>
+          </article>
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg></div>
+            <h3>Documented diligence process</h3>
+            <p>A structured checklist approach — title, approvals, lease documents, tenant profile and physical condition — written down so it is clear what has and has not been reviewed.</p>
+          </article>
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></div>
+            <h3>Clear risk communication</h3>
+            <p>Each listing carries property-specific risks alongside general ones such as illiquidity, vacancy and valuation uncertainty, in plain language.</p>
+          </article>
+          <article class="feature">
+            <div class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg></div>
+            <h3>Investor enquiry support</h3>
+            <p>A simple way to ask questions about a property and be pointed towards the right independent professionals for advice specific to your circumstances.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         ABOUT
+         ============================================================== -->
+    <section class="section section--soft" id="about" aria-labelledby="about-title">
+      <div class="container about">
+        <div class="about__copy reveal">
+          <span class="eyebrow">About SV Realtor</span>
+          <h2 id="about-title" tabindex="-1">A property intelligence concept, starting with Pune</h2>
+          <p>SV Realtor is a commercial real estate discovery and property intelligence concept. Its aim is to make income-producing commercial property easier to understand — what a building is, who occupies it, how its rent is structured and what risks sit behind the headline yield.</p>
+          <p>Pune is a natural starting point. Its technology and services corridors have driven sustained demand for office space, while its retail and logistics markets continue to evolve. Each micro-market behaves differently, and we believe that local nuance deserves to be presented clearly.</p>
+          <ul class="principles">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div><strong>Clarity over hype</strong><span>Plain-language explanations and no promises of returns.</span></div></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div><strong>Assumptions in the open</strong><span>Every estimate shows the inputs used to produce it.</span></div></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div><strong>Local depth first</strong><span>One city, understood well, before expanding further.</span></div></li>
+          </ul>
+        </div>
+        <div class="about__media reveal">
+          <div class="about__img">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
+                 alt="Bright, modern open-plan commercial office interior (stock photography)"
+                 data-label="Modern office interior" loading="lazy" width="1200" height="960">
+          </div>
+          <div class="is-isnt">
+            <div>
+              <h3>SV Realtor is</h3>
+              <ul>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>A concept for discovering commercial property</li>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>A way to compare fundamentals and assumptions</li>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>A starting point for informed questions</li>
+              </ul>
+            </div>
+            <div>
+              <h3>SV Realtor is not</h3>
+              <ul>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg>An offer of securities or investments</li>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg>Registered with SEBI or any other regulator</li>
+                <li><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg>A source of verified valuations or guaranteed income</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         CONTACT
+         ============================================================== -->
+    <section class="section" id="contact" aria-labelledby="contact-title">
+      <div class="container contact">
+        <div class="contact__info reveal">
+          <div class="section-head" style="margin-bottom:0">
+            <span class="eyebrow">Contact</span>
+            <h2 id="contact-title" tabindex="-1">Enquire about a property</h2>
+            <p>Share what you are interested in and the questions you have. This prototype form is validated in your browser only.</p>
+          </div>
+          <ul class="contact__list">
+            <li>
+              <span class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span>
+              <dl><dt>Email</dt><dd>hello@svrealtor.example <small>Placeholder address</small></dd></dl>
+            </li>
+            <li>
+              <span class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg></span>
+              <dl><dt>Phone</dt><dd>+91 00000 00000 <small>Placeholder number</small></dd></dl>
+            </li>
+            <li>
+              <span class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg></span>
+              <dl><dt>Office</dt><dd>Pune, Maharashtra <small>Address placeholder</small></dd></dl>
+            </li>
+            <li>
+              <span class="feature__icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></span>
+              <dl><dt>Hours</dt><dd>Mon – Fri, 10:00 – 18:00 IST <small>Illustrative</small></dd></dl>
+            </li>
+          </ul>
+        </div>
+
+        <div class="form-card reveal">
+          <form id="enquiry-form" novalidate aria-labelledby="contact-title">
+            <div class="form-grid">
+              <div class="form-alert form-alert--error span-2" id="form-error-summary" role="alert" tabindex="-1" hidden>
+                <svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg>
+                <span>Please correct the highlighted fields below.</span>
+              </div>
+
+              <div class="field" data-field="name">
+                <label for="e-name">Full name <span class="req" aria-hidden="true">*</span></label>
+                <input class="input" type="text" id="e-name" name="name" autocomplete="name" required aria-describedby="e-name-error">
+                <p class="field-error" id="e-name-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p>
+              </div>
+
+              <div class="field" data-field="email">
+                <label for="e-email">Email <span class="req" aria-hidden="true">*</span></label>
+                <input class="input" type="email" id="e-email" name="email" autocomplete="email" required aria-describedby="e-email-error">
+                <p class="field-error" id="e-email-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p>
+              </div>
+
+              <div class="field" data-field="phone">
+                <label for="e-phone">Phone number <span class="req" aria-hidden="true">*</span></label>
+                <input class="input" type="tel" id="e-phone" name="phone" autocomplete="tel" placeholder="+91 98765 43210" required aria-describedby="e-phone-hint e-phone-error">
+                <p class="field-hint" id="e-phone-hint">10-digit Indian mobile number</p>
+                <p class="field-error" id="e-phone-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p>
+              </div>
+
+              <div class="field" data-field="property">
+                <label for="e-property">Interested property <span class="req" aria-hidden="true">*</span></label>
+                <select class="select" id="e-property" name="property" required aria-describedby="e-property-error">
+                  <option value="">Select a property</option>
+                </select>
+                <p class="field-error" id="e-property-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p>
+              </div>
+
+              <div class="field span-2" data-field="budget">
+                <label for="e-budget">Approximate investment budget <span style="color:var(--c-subtle);font-weight:400">(optional)</span></label>
+                <select class="select" id="e-budget" name="budget">
+                  <option value="">Prefer not to say</option>
+                  <option>Under ₹10 Lakh</option>
+                  <option>₹10 Lakh – ₹25 Lakh</option>
+                  <option>₹25 Lakh – ₹1 Crore</option>
+                  <option>₹1 Crore – ₹5 Crore</option>
+                  <option>Above ₹5 Crore</option>
+                </select>
+              </div>
+
+              <div class="field span-2" data-field="message">
+                <label for="e-message">Message <span style="color:var(--c-subtle);font-weight:400">(optional)</span></label>
+                <textarea class="textarea" id="e-message" name="message" maxlength="1000" placeholder="What would you like to know about this property?" aria-describedby="e-message-hint"></textarea>
+                <p class="field-hint" id="e-message-hint"><span>Please don't include bank details, PAN, Aadhaar or passwords.</span><span id="e-message-count">0 / 1000</span></p>
+              </div>
+
+              <div class="field span-2" data-field="consent">
+                <label class="check" for="e-consent">
+                  <input type="checkbox" id="e-consent" name="consent" required aria-describedby="e-consent-error">
+                  <span>I understand this is a prototype, that this enquiry is not sent to any server, and that nothing on this site is an investment offer. <span class="req" aria-hidden="true">*</span></span>
+                </label>
+                <p class="field-error" id="e-consent-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p>
+              </div>
+
+              <div class="form-actions span-2">
+                <p>Fields marked <span class="req" style="color:var(--c-accent)">*</span> are required.</p>
+                <button type="submit" class="btn btn--primary btn--lg">Submit enquiry <svg class="icon icon--arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              </div>
+            </div>
+          </form>
+
+          <div class="success" id="enquiry-success" role="status" tabindex="-1" hidden></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================================================================
+       FOOTER
+       ================================================================ -->
+  <footer class="site-footer" id="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#home" class="logo logo--light" aria-label="SV Realtor — back to top">
+            <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 19V10h3.5v9zM10.25 19V5h3.5v14zM15.5 19v-6H19v6z"/></svg></span>
+            <span class="logo__text">SV <span>Realtor</span></span>
+          </a>
+          <p>A commercial real estate discovery and property intelligence concept, starting with Pune. This website is a demonstration prototype.</p>
+        </div>
+        <div class="footer-col">
+          <h3>Explore</h3>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#properties">Properties</a></li>
+            <li><a href="#calculator">Calculator</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h3>Company</h3>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><button type="button" data-action="open-login">Login</button></li>
+            <li><span>hello@svrealtor.example</span></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h3>Legal</h3>
+          <ul>
+            <li><button type="button" data-action="open-doc" data-doc="privacy">Privacy Policy</button></li>
+            <li><button type="button" data-action="open-doc" data-doc="terms">Terms of Use</button></li>
+            <li><button type="button" data-action="open-doc" data-doc="risk">Risk Disclosure</button></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>This website is a demonstration and does not constitute an investment offer, solicitation, or advice. All property listings, financial figures and statistics are fictional. SV Realtor is not registered with SEBI or any other regulator.</p>
+        <div class="footer-bottom__row">
+          <span>© <span id="year">2026</span> SV Realtor. Prototype for demonstration purposes.</span>
+          <span>Photography: generic stock imagery, not the properties described.</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button type="button" class="back-to-top" id="back-to-top" data-action="back-to-top" aria-label="Back to top">
+    <svg class="icon" aria-hidden="true"><use href="#i-arrow-up"/></svg>
+  </button>
+
+  <!-- ================================================================
+       MODAL SHELL (content injected by JS)
+       ================================================================ -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal__backdrop"></div>
+    <div class="modal__scroller" id="modal-scroller">
+      <div class="modal__panel" id="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+        <button type="button" class="modal__close" data-action="close-modal" aria-label="Close dialog">
+          <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ================================================================
+       1. DEMONSTRATION DATA (fictional)
+       ================================================================ */
+    var IMG = function (id, w) {
+      return 'https://images.unsplash.com/photo-' + id + '?auto=format&fit=crop&w=' + (w || 900) + '&q=80';
+    };
+
+    var GENERAL_RISKS = [
+      'Commercial real estate is illiquid. Selling or exiting may take a long time, or may not be possible at the expected price.',
+      'All figures are fictional and unverified. Actual rents, costs, occupancy and values could differ materially.',
+      'Stamp duty, registration, income tax, financing, brokerage and other transaction costs are not included.'
+    ];
+
+    var PROPERTIES = [
+      {
+        id: 'meridian-tech-plaza', featured: true,
+        name: 'Meridian Tech Plaza', locality: 'Hinjewadi', submarket: 'Hinjewadi Phase II',
+        type: 'Grade A Office', price: 1420000000, grossYield: 8.1, opexPct: 12,
+        occupancy: 'Fully leased', occupancyPct: 100, area: 185000,
+        tenant: 'Single multinational IT services occupier (fictional)',
+        leaseTerm: '9 years remaining', lockIn: '4 years remaining', escalation: '15% every 3 years',
+        yieldBasis: 'Based on the current (fictional) lease',
+        image: IMG('1479839672679-a46483c0e7c8'),
+        description: 'A fictional Grade A office building in Pune\'s largest IT corridor, with large, efficient floor plates, two basement levels of parking and full power back-up. The demonstration scenario assumes a single technology occupier on a long lease.',
+        highlights: ['Large floor plates', 'Long lease (demo)', 'IT corridor location'],
+        risks: [
+          'Tenant concentration: in this example one occupier provides all of the rental income.',
+          'Significant new office supply in Hinjewadi could limit future rent growth or re-leasing terms.',
+          'Infrastructure and metro timelines in the corridor are subject to change.'
+        ]
+      },
+      {
+        id: 'riverline-business-centre', featured: true,
+        name: 'Riverline Business Centre', locality: 'Kharadi', submarket: 'Kharadi IT corridor',
+        type: 'Commercial Office', price: 960000000, grossYield: 7.6, opexPct: 14,
+        occupancy: 'Fully leased', occupancyPct: 100, area: 112000,
+        tenant: 'Three occupiers across IT services and banking operations (fictional)',
+        leaseTerm: '6.2 years weighted average remaining', lockIn: '2.5 years weighted average', escalation: '5% annually',
+        yieldBasis: 'Based on current (fictional) leases',
+        image: IMG('1554469384-e58fac16e23a'),
+        description: 'A fictional multi-tenant office building in East Pune, close to established IT parks and residential catchments. The demonstration scenario spreads rental income across three occupiers with staggered lease expiries.',
+        highlights: ['Multi-tenant (demo)', 'Annual escalations', 'East Pune'],
+        risks: [
+          'Staggered lease expiries mean parts of the building could become vacant at different times.',
+          'Kharadi faces competition from newer office campuses nearby.',
+          'Rent escalations may be renegotiated at renewal and are not guaranteed.'
+        ]
+      },
+      {
+        id: 'baner-crest-workspace', featured: true,
+        name: 'Baner Crest Workspace', locality: 'Baner', submarket: 'Baner–Balewadi',
+        type: 'Managed Workspace', price: 485000000, grossYield: 7.2, opexPct: 22,
+        occupancy: 'Partially leased', occupancyPct: 82, area: 58000,
+        tenant: 'Flexible workspace operator plus direct occupiers (fictional)',
+        leaseTerm: '4 years remaining on operator lease', lockIn: '2 years', escalation: '4.5% annually',
+        yieldBasis: 'Based on currently leased area only (fictional)',
+        image: IMG('1497366811353-6870744d04b2'),
+        description: 'A fictional premium workspace building in West Pune, configured for flexible and managed office occupiers. The demonstration scenario assumes higher operating costs, reflecting the amenity-heavy format.',
+        highlights: ['Premium fit-out', 'Flexible occupiers', 'West Pune'],
+        risks: [
+          'Flexible-workspace income can be more volatile than conventional long leases.',
+          '18% of the area is unleased in this example; the yield shown excludes it.',
+          'Higher assumed operating costs (22% of gross rent) materially reduce operating income.'
+        ]
+      },
+      {
+        id: 'wakad-junction-commercial', featured: true,
+        name: 'Wakad Junction Commercial', locality: 'Wakad', submarket: 'Wakad–Hinjewadi road',
+        type: 'Mixed Commercial', price: 320000000, grossYield: 8.6, opexPct: 15,
+        occupancy: 'Partially leased', occupancyPct: 74, area: 46000,
+        tenant: 'Ground-floor retail and small office occupiers (fictional)',
+        leaseTerm: '1 – 7 years, varies by tenant', lockIn: 'Varies by tenant', escalation: '5% annually (retail)',
+        yieldBasis: 'Based on currently leased area only (fictional)',
+        image: IMG('1431576901776-e539bd916ba2'),
+        description: 'A fictional mixed commercial building with street-facing retail and small office suites on upper floors, serving the dense residential catchment between Wakad and Hinjewadi.',
+        highlights: ['Street-front retail', 'Residential catchment', 'Small suites'],
+        risks: [
+          'Many small tenants increase management effort and the frequency of lease renewals.',
+          '26% of the area is unleased in this example; the yield shown excludes it.',
+          'Retail income is sensitive to local consumer demand and competition.'
+        ]
+      },
+      {
+        id: 'skyline-avenue-offices', featured: false,
+        name: 'Skyline Avenue Offices', locality: 'Viman Nagar', submarket: 'Viman Nagar–Airport Road',
+        type: 'Commercial Office', price: 680000000, grossYield: 7.4, opexPct: 13,
+        occupancy: 'Fully leased', occupancyPct: 100, area: 72000,
+        tenant: 'Two financial services back-office occupiers (fictional)',
+        leaseTerm: '5.5 years weighted average remaining', lockIn: '1.5 years', escalation: '4.75% annually',
+        yieldBasis: 'Based on current (fictional) leases',
+        image: IMG('1497366216548-37526070297c'),
+        description: 'A fictional mid-size office building close to the airport and established residential neighbourhoods, leased to two financial services occupiers in the demonstration scenario.',
+        highlights: ['Airport proximity', 'Two tenants (demo)', 'Established location'],
+        risks: [
+          'Short remaining lock-in means tenants could exit relatively soon.',
+          'Older buildings may require capital expenditure to stay competitive.',
+          'Two-tenant structure still carries meaningful concentration risk.'
+        ]
+      },
+      {
+        id: 'eastgate-tech-park-block-c', featured: false,
+        name: 'Eastgate Tech Park — Block C', locality: 'Hadapsar', submarket: 'Hadapsar IT cluster',
+        type: 'Grade A Office', price: 1180000000, grossYield: 8.3, opexPct: 12,
+        occupancy: 'Fully leased', occupancyPct: 100, area: 148000,
+        tenant: 'Global engineering services occupier (fictional)',
+        leaseTerm: '7 years remaining', lockIn: '3 years remaining', escalation: '15% every 3 years',
+        yieldBasis: 'Based on the current (fictional) lease',
+        image: IMG('1486325212027-8081e485255e'),
+        description: 'A fictional Grade A office block within a larger campus in South-East Pune. The demonstration scenario assumes a single engineering services occupier and shared campus amenities.',
+        highlights: ['Campus setting', 'Single tenant (demo)', 'South-East Pune'],
+        risks: [
+          'Tenant concentration: one occupier provides all of the rental income in this example.',
+          'Shared campus infrastructure may involve costs or decisions outside the owner\'s control.',
+          'Large floor plates can take longer to re-lease if the tenant leaves.'
+        ]
+      },
+      {
+        id: 'aundh-high-street-retail', featured: false,
+        name: 'Aundh High Street Retail', locality: 'Aundh', submarket: 'Aundh–ITI Road',
+        type: 'Retail / High Street', price: 225000000, grossYield: 6.8, opexPct: 10,
+        occupancy: 'Fully leased', occupancyPct: 100, area: 18500,
+        tenant: 'National apparel and food & beverage brands (fictional)',
+        leaseTerm: '6 years weighted average remaining', lockIn: '3 years', escalation: '5% annually',
+        yieldBasis: 'Based on current (fictional) leases',
+        image: IMG('1441986300917-64674bd600d8'),
+        description: 'A fictional high-street retail building on a busy neighbourhood shopping street, with ground and first-floor stores leased to national brands in the demonstration scenario.',
+        highlights: ['High-street frontage', 'National brands (demo)', 'Compact asset'],
+        risks: [
+          'Retail demand can shift towards malls and online channels.',
+          'Lower yield in this example reflects pricing for prime frontage, leaving less margin for error.',
+          'Store closures by a single brand could affect a large share of income.'
+        ]
+      },
+      {
+        id: 'chakan-logistics-hub', featured: false,
+        name: 'Chakan Logistics Hub', locality: 'Chakan', submarket: 'Chakan industrial belt',
+        type: 'Warehousing', price: 580000000, grossYield: 9.1, opexPct: 8,
+        occupancy: 'Pre-leasing', occupancyPct: 0, area: 240000, projected: true,
+        tenant: 'Not yet leased',
+        leaseTerm: 'Not applicable', lockIn: 'Not applicable', escalation: 'Assumed 4% annually',
+        yieldBasis: 'Projected — assumes the whole facility is leased at an assumed market rent',
+        image: IMG('1586528116311-ad8dd3c8310d'),
+        description: 'A fictional Grade A warehousing facility in the industrial belt north of Pune, positioned for manufacturing and e-commerce logistics. In the demonstration scenario it has no tenants yet.',
+        highlights: ['Industrial belt', 'Large footprint', 'Pre-leasing (demo)'],
+        risks: [
+          'No tenant in place: the yield is a projection, and the property currently earns no rent in this example.',
+          'Leasing could take longer than expected or be agreed at lower rents.',
+          'Demand is linked to the automotive and manufacturing cycle.'
+        ]
+      }
+    ];
+
+    var PRICE_BUCKETS = {
+      'all': [0, Infinity], 'u25': [0, 25e7], '25-50': [25e7, 50e7], '50-100': [50e7, 100e7], 'o100': [100e7, Infinity]
+    };
+    var YIELD_BUCKETS = {
+      'all': [0, Infinity], 'u7': [0, 7], '7-8': [7, 8], '8-9': [8, 9], 'o9': [9, Infinity]
+    };
+
+    /* ================================================================
+       2. UTILITIES
+       ================================================================ */
+    var $ = function (sel, ctx) { return (ctx || document).querySelector(sel); };
+    var $$ = function (sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); };
+    var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var inrFull = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    var num2 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
+    var intIN = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+    function formatINR(v) { return isFinite(v) ? inrFull.format(v) : '—'; }
+    function formatINRCompact(v) {
+      if (!isFinite(v)) return '—';
+      var abs = Math.abs(v), sign = v < 0 ? '−' : '';
+      if (abs >= 1e7) return sign + '₹' + num2.format(abs / 1e7) + ' Cr';
+      if (abs >= 1e5) return sign + '₹' + num2.format(abs / 1e5) + ' L';
+      return sign + inrFull.format(abs);
+    }
+    function formatPct(v, digits) {
+      if (!isFinite(v)) return '—';
+      return new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits == null ? 2 : digits }).format(v) + '%';
+    }
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function icon(name, cls) {
+      return '<svg class="icon ' + (cls || '') + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+    }
+    function getProperty(id) {
+      for (var i = 0; i < PROPERTIES.length; i++) if (PROPERTIES[i].id === id) return PROPERTIES[i];
+      return null;
+    }
+    function financials(p) {
+      var gross = p.price * p.grossYield / 100;
+      var opex = gross * p.opexPct / 100;
+      var noi = gross - opex;
+      return { gross: gross, opex: opex, noi: noi, monthlyGross: gross / 12, opYield: noi / p.price * 100 };
+    }
+    function occClass(p) {
+      if (!p.occupancy) return 'occ--na';
+      if (p.occupancy === 'Fully leased') return 'occ--full';
+      if (p.occupancy === 'Partially leased') return 'occ--partial';
+      return 'occ--pre';
+    }
+    function occLabel(p) {
+      if (!p.occupancy) return 'Occupancy not specified';
+      if (p.occupancy === 'Pre-leasing') return 'Pre-leasing · not yet tenanted';
+      return p.occupancy + ' · ' + p.occupancyPct + '%';
+    }
+    function scrollToEl(el, focusEl) {
+      if (!el) return;
+      el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+      if (focusEl) {
+        try { focusEl.focus({ preventScroll: true }); } catch (e) { focusEl.focus(); }
+      }
+    }
+    function debounce(fn, ms) {
+      var t;
+      return function () { var args = arguments, ctx = this; clearTimeout(t); t = setTimeout(function () { fn.apply(ctx, args); }, ms); };
+    }
+
+    /* Safe storage: falls back to memory if localStorage is unavailable */
+    var storage = (function () {
+      var memory = {}, available = false;
+      try {
+        var k = '__svr_test__';
+        window.localStorage.setItem(k, '1');
+        window.localStorage.removeItem(k);
+        available = true;
+      } catch (e) { available = false; }
+      return {
+        available: available,
+        get: function (key) {
+          try { return available ? window.localStorage.getItem(key) : (key in memory ? memory[key] : null); }
+          catch (e) { return key in memory ? memory[key] : null; }
+        },
+        set: function (key, value) {
+          memory[key] = value;
+          if (!available) return false;
+          try { window.localStorage.setItem(key, value); return true; }
+          catch (e) { return false; }
+        }
+      };
+    })();
+
+    /* ================================================================
+       3. TOASTS
+       ================================================================ */
+    var toastRegion = $('#toast-region');
+    function toast(message, iconName) {
+      var el = document.createElement('div');
+      el.className = 'toast';
+      el.innerHTML = icon(iconName || 'check') + '<span>' + escapeHTML(message) + '</span>';
+      toastRegion.appendChild(el);
+      setTimeout(function () {
+        el.classList.add('is-leaving');
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+      }, 3200);
+      while (toastRegion.children.length > 3) toastRegion.removeChild(toastRegion.firstChild);
+    }
+
+    /* ================================================================
+       4. WATCHLIST
+       ================================================================ */
+    var WATCH_KEY = 'svRealtor.watchlist.v1';
+    var watchlist = (function () {
+      var raw = storage.get(WATCH_KEY), list = [];
+      if (raw) {
+        try {
+          var parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) list = parsed.filter(function (id) { return typeof id === 'string' && getProperty(id); });
+        } catch (e) { list = []; }
+      }
+      return list;
+    })();
+    var storageWarningShown = false;
+
+    function isWatched(id) { return watchlist.indexOf(id) !== -1; }
+    function saveWatchlist() {
+      var ok = storage.set(WATCH_KEY, JSON.stringify(watchlist));
+      if (!ok && !storageWarningShown) {
+        storageWarningShown = true;
+        toast('Browser storage is unavailable, so your watchlist will reset when you leave.', 'info');
+      }
+    }
+    function toggleWatch(id) {
+      var p = getProperty(id);
+      if (!p) return;
+      var idx = watchlist.indexOf(id);
+      if (idx === -1) { watchlist.push(id); toast(p.name + ' added to your watchlist', 'heart'); }
+      else { watchlist.splice(idx, 1); toast(p.name + ' removed from your watchlist', 'heart'); }
+      saveWatchlist();
+      syncWatchUI(id, true);
+    }
+    function syncWatchUI(id, animate) {
+      var watched = isWatched(id), p = getProperty(id);
+      $$('[data-action="toggle-watch"][data-id="' + id + '"]').forEach(function (btn) {
+        btn.setAttribute('aria-pressed', watched ? 'true' : 'false');
+        btn.setAttribute('aria-label', (watched ? 'Remove ' : 'Add ') + p.name + (watched ? ' from' : ' to') + ' watchlist');
+        var label = btn.querySelector('[data-watch-label]');
+        if (label) label.textContent = watched ? 'Saved' : 'Save';
+        if (animate) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
+      });
+      updateWatchCount(animate);
+    }
+    function updateWatchCount(animate) {
+      var n = watchlist.length, badge = $('#watchlist-count'), btn = $('#watchlist-btn');
+      badge.textContent = n;
+      badge.classList.toggle('is-empty', n === 0);
+      btn.setAttribute('aria-label', 'Open watchlist, ' + n + ' saved ' + (n === 1 ? 'property' : 'properties'));
+      if (animate && n > 0) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+    }
+
+    /* ================================================================
+       5. PROPERTY CARDS
+       ================================================================ */
+    function cardHTML(p, entering) {
+      var watched = isWatched(p.id);
+      return '' +
+        '<article class="card' + (entering ? ' is-entering' : '') + '" data-id="' + p.id + '">' +
+          '<div class="card__media">' +
+            '<img src="' + p.image + '" alt="' + escapeHTML(p.type + ' — stock photograph used to illustrate ' + p.name) + '" data-label="' + escapeHTML(p.locality + ' · ' + p.type) + '" loading="lazy" decoding="async" width="900" height="675">' +
+            '<span class="tag tag--demo">Demo listing</span>' +
+            '<button type="button" class="watch-btn" data-action="toggle-watch" data-id="' + p.id + '" aria-pressed="' + watched + '" aria-label="' + (watched ? 'Remove ' : 'Add ') + escapeHTML(p.name) + (watched ? ' from' : ' to') + ' watchlist">' + icon('heart') + '</button>' +
+          '</div>' +
+          '<div class="card__body">' +
+            '<p class="card__type">' + escapeHTML(p.type) + '</p>' +
+            '<h3 class="card__title">' + escapeHTML(p.name) + '</h3>' +
+            '<p class="card__loc">' + icon('pin', 'icon--sm') + escapeHTML(p.locality) + ', Pune</p>' +
+            '<dl class="card__metrics">' +
+              '<div><dt>Asking price*</dt><dd>' + formatINRCompact(p.price) + '</dd></div>' +
+              '<div><dt>' + (p.projected ? 'Projected gross yield*' : 'Gross rental yield*') + '</dt><dd>' + formatPct(p.grossYield) + '</dd></div>' +
+            '</dl>' +
+            '<div class="card__footer">' +
+              '<span class="occ ' + occClass(p) + '"><span class="occ__dot" aria-hidden="true"></span>' + escapeHTML(occLabel(p)) + '</span>' +
+              '<button type="button" class="btn btn--outline btn--sm btn--block" data-action="open-property" data-id="' + p.id + '">View details<span class="visually-hidden"> for ' + escapeHTML(p.name) + '</span> ' + icon('arrow', 'icon--sm icon--arrow') + '</button>' +
+            '</div>' +
+            '<p class="card__note">*Illustrative demonstration figures, not verified.</p>' +
+          '</div>' +
+        '</article>';
+    }
+
+    function renderFeatured() {
+      $('#featured-grid').innerHTML = PROPERTIES.filter(function (p) { return p.featured; }).map(function (p) { return cardHTML(p); }).join('');
+    }
+
+    function renderHero() {
+      var p = PROPERTIES[0];
+      $('#hero-card').innerHTML =
+        '<div class="hero__card-top"><span class="tag tag--accent">Featured demo</span><span class="tag tag--outline">' + escapeHTML(p.type) + '</span></div>' +
+        '<h3>' + escapeHTML(p.name) + '</h3>' +
+        '<p class="loc">' + icon('pin', 'icon--sm') + escapeHTML(p.submarket) + ', Pune</p>' +
+        '<dl><div><dt>Asking price*</dt><dd>' + formatINRCompact(p.price) + '</dd></div>' +
+        '<div><dt>Gross yield*</dt><dd>' + formatPct(p.grossYield) + '</dd></div></dl>' +
+        '<button type="button" class="btn btn--dark btn--sm btn--block" data-action="open-property" data-id="' + p.id + '">View details<span class="visually-hidden"> for ' + escapeHTML(p.name) + '</span> ' + icon('arrow', 'icon--sm icon--arrow') + '</button>' +
+        '<p class="card__note">*Illustrative, fictional figures.</p>';
+
+      var localities = PROPERTIES.map(function (x) { return x.locality; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+      var stats = [
+        { value: PROPERTIES.length, label: 'Curated Opportunities', desc: 'Demonstration listings across office, retail and logistics' },
+        { value: localities.length, label: 'Pune-Focused Research', desc: 'Micro-markets covered, from Hinjewadi to Chakan' },
+        { value: '100%', label: 'Transparent Property Information', desc: 'Of listings itemise gross rent, cost assumptions and risks' }
+      ];
+      $('#hero-stats').innerHTML = stats.map(function (s) {
+        return '<div class="stat"><p class="stat__value">' + s.value + '</p><p class="stat__label">' + s.label + '</p><p class="stat__desc">' + s.desc + '</p></div>';
+      }).join('') + '<p class="hero__stats-note">Illustrative prototype statistics derived from demonstration data — not measures of actual business performance.</p>';
+    }
+
+    /* ================================================================
+       6. FILTERS & SORTING
+       ================================================================ */
+    var filterState = { q: '', location: 'all', type: 'all', price: 'all', yield: 'all', occupancy: 'all', sort: 'featured' };
+    var filterEls = {
+      form: $('#filters'), q: $('#f-search'), location: $('#f-location'), type: $('#f-type'),
+      price: $('#f-price'), yield: $('#f-yield'), occupancy: $('#f-occupancy'), sort: $('#f-sort')
+    };
+
+    function uniqueValues(key) {
+      return PROPERTIES.map(function (p) { return p[key]; })
+        .filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+    }
+    function populateSelect(select, values) {
+      values.forEach(function (v) {
+        var o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        select.appendChild(o);
+      });
+    }
+    function initFilterOptions() {
+      populateSelect(filterEls.location, uniqueValues('locality').sort());
+      populateSelect(filterEls.type, uniqueValues('type').sort());
+      populateSelect(filterEls.occupancy, ['Fully leased', 'Partially leased', 'Pre-leasing'].filter(function (s) {
+        return PROPERTIES.some(function (p) { return p.occupancy === s; });
+      }));
+    }
+
+    function applyFilters() {
+      var s = filterState, q = s.q.trim().toLowerCase();
+      var pr = PRICE_BUCKETS[s.price] || PRICE_BUCKETS.all;
+      var yr = YIELD_BUCKETS[s.yield] || YIELD_BUCKETS.all;
+      var list = PROPERTIES.filter(function (p) {
+        if (q) {
+          var hay = (p.name + ' ' + p.locality + ' ' + p.submarket + ' ' + p.type).toLowerCase();
+          if (hay.indexOf(q) === -1) return false;
+        }
+        if (s.location !== 'all' && p.locality !== s.location) return false;
+        if (s.type !== 'all' && p.type !== s.type) return false;
+        if (s.occupancy !== 'all' && p.occupancy !== s.occupancy) return false;
+        if (!(p.price >= pr[0] && p.price < pr[1])) return false;
+        if (!(p.grossYield >= yr[0] && p.grossYield < yr[1])) return false;
+        return true;
+      });
+      var order = function (p) { return PROPERTIES.indexOf(p); };
+      list.sort(function (a, b) {
+        switch (s.sort) {
+          case 'price-asc': return a.price - b.price;
+          case 'price-desc': return b.price - a.price;
+          case 'yield-desc': return b.grossYield - a.grossYield;
+          default: return (b.featured - a.featured) || (order(a) - order(b));
+        }
+      });
+      return list;
+    }
+
+    function activeFilterCount() {
+      var s = filterState, n = 0;
+      ['location', 'type', 'price', 'yield', 'occupancy'].forEach(function (k) { if (s[k] !== 'all') n++; });
+      return n;
+    }
+
+    function renderExplore() {
+      var list = applyFilters(), grid = $('#explore-grid');
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty-state"><h3>No properties match these filters</h3><p>Try widening the price or yield range, choosing a different location, or clearing your search.</p><button type="button" class="btn btn--primary" data-action="reset-filters">Reset filters</button></div>';
+      } else {
+        grid.innerHTML = list.map(function (p) { return cardHTML(p, !prefersReducedMotion); }).join('');
+      }
+      $('#result-count').innerHTML = 'Showing <strong>' + list.length + '</strong> of ' + PROPERTIES.length + ' demonstration properties';
+      var n = activeFilterCount();
+      $('#filters-active-count').textContent = n ? '(' + n + ')' : '';
+    }
+
+    function readFilters() {
+      filterState.q = filterEls.q.value;
+      ['location', 'type', 'price', 'yield', 'occupancy', 'sort'].forEach(function (k) { filterState[k] = filterEls[k].value; });
+      renderExplore();
+    }
+
+    /* form.reset() fires the 'reset' listener below, which re-reads the defaults */
+    function resetFilters(focusSearch) {
+      filterEls.form.reset();
+      if (focusSearch) filterEls.q.focus();
+    }
+
+    function initFilters() {
+      initFilterOptions();
+      filterEls.form.addEventListener('submit', function (e) { e.preventDefault(); readFilters(); });
+      filterEls.q.addEventListener('input', debounce(readFilters, 160));
+      ['location', 'type', 'price', 'yield', 'occupancy', 'sort'].forEach(function (k) {
+        filterEls[k].addEventListener('change', readFilters);
+      });
+      filterEls.form.addEventListener('reset', function () {
+        /* Native reset completes after this event; read the restored values next tick */
+        setTimeout(function () { readFilters(); toast('Filters reset', 'filter'); }, 0);
+      });
+      var toggle = $('#filters-toggle'), panel = $('#filters-panel');
+      toggle.addEventListener('click', function () {
+        var open = toggle.getAttribute('aria-expanded') !== 'true';
+        toggle.setAttribute('aria-expanded', String(open));
+        panel.classList.toggle('is-open', open);
+      });
+      renderExplore();
+    }
+
+    /* ================================================================
+       7. MODAL SYSTEM (focus trap, Escape, focus restore, inert bg)
+       ================================================================ */
+    var modalEl = $('#modal'), modalPanel = $('#modal-panel'), modalBody = $('#modal-body'), modalScroller = $('#modal-scroller');
+    var modalState = { open: false, trigger: null, triggerSelector: null, closeTimer: null };
+    var inertTargets = ['#demo-banner', '#site-header', '#main', '#site-footer', '#back-to-top'];
+
+    function setBackgroundInert(on) {
+      inertTargets.forEach(function (sel) {
+        var el = $(sel);
+        if (!el) return;
+        if (on) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
+        else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+      });
+    }
+
+    function selectorFor(el) {
+      if (!el || !el.getAttribute) return null;
+      var action = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+      if (action && id) return '[data-action="' + action + '"][data-id="' + id + '"]';
+      if (el.id) return '#' + el.id;
+      return null;
+    }
+
+    function openModal(html, size) {
+      clearTimeout(modalState.closeTimer);
+      if (!modalState.open) {
+        modalState.trigger = document.activeElement;
+        modalState.triggerSelector = selectorFor(document.activeElement);
+        var sbw = window.innerWidth - document.documentElement.clientWidth;
+        if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+        document.body.classList.add('modal-open');
+        setBackgroundInert(true);
+      }
+      modalPanel.className = 'modal__panel' + (size ? ' modal__panel--' + size : '');
+      modalBody.innerHTML = html;
+      modalEl.hidden = false;
+      modalScroller.scrollTop = 0;
+      modalState.open = true;
+      requestAnimationFrame(function () { modalEl.classList.add('is-open'); });
+      try { modalPanel.focus({ preventScroll: true }); } catch (e) { modalPanel.focus(); }
+      modalScroller.scrollTop = 0;
+    }
+
+    function closeModal(restoreFocus) {
+      if (!modalState.open) return;
+      modalState.open = false;
+      modalEl.classList.remove('is-open');
+      setBackgroundInert(false);
+      document.body.classList.remove('modal-open');
+      document.body.style.paddingRight = '';
+      modalState.closeTimer = setTimeout(function () {
+        modalEl.hidden = true;
+        modalBody.innerHTML = '';
+      }, prefersReducedMotion ? 0 : 220);
+      if (restoreFocus !== false) {
+        var t = modalState.trigger;
+        if (!t || !document.contains(t)) t = modalState.triggerSelector ? $(modalState.triggerSelector) : null;
+        if (t && typeof t.focus === 'function') {
+          try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
+        }
+      }
+      modalState.trigger = null;
+      modalState.triggerSelector = null;
+    }
+
+    function trapFocus(e) {
+      var focusables = $$('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])', modalPanel)
+        .filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
+      if (!focusables.length) { e.preventDefault(); modalPanel.focus(); return; }
+      var first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === modalPanel)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    var pointerDownOnScroller = false;
+    modalScroller.addEventListener('mousedown', function (e) { pointerDownOnScroller = e.target === modalScroller; });
+    modalScroller.addEventListener('click', function (e) {
+      if (e.target === modalScroller && pointerDownOnScroller) closeModal();
+      pointerDownOnScroller = false;
+    });
+
+    /* ================================================================
+       8. MODAL CONTENT
+       ================================================================ */
+    function openProperty(id) {
+      var p = getProperty(id);
+      if (!p) return;
+      var f = financials(p), watched = isWatched(p.id);
+      var risks = p.risks.concat(GENERAL_RISKS);
+      var grossLabel = p.projected ? 'Projected annual gross rent' : 'Annual gross rent (estimate)';
+
+      var html =
+        '<article class="pm">' +
+          '<div class="pm__media">' +
+            '<img src="' + p.image.replace('w=900', 'w=1600') + '" alt="' + escapeHTML(p.type + ' — stock photograph used to illustrate ' + p.name) + '" data-label="' + escapeHTML(p.name) + '" width="1600" height="686">' +
+            '<span class="tag tag--demo">Demonstration listing · stock photograph</span>' +
+          '</div>' +
+          '<header class="pm__head">' +
+            '<div>' +
+              '<p class="card__type">' + escapeHTML(p.type) + '</p>' +
+              '<h2 id="modal-title">' + escapeHTML(p.name) + '</h2>' +
+              '<p class="pm__loc">' + icon('pin', 'icon--sm') + escapeHTML(p.submarket) + ', ' + escapeHTML(p.locality) + ', Pune</p>' +
+            '</div>' +
+            '<button type="button" class="save-btn" data-action="toggle-watch" data-id="' + p.id + '" aria-pressed="' + watched + '" aria-label="' + (watched ? 'Remove ' : 'Add ') + escapeHTML(p.name) + (watched ? ' from' : ' to') + ' watchlist">' + icon('heart', 'icon--sm') + '<span data-watch-label>' + (watched ? 'Saved' : 'Save') + '</span></button>' +
+          '</header>' +
+          '<div class="pm__grid">' +
+            '<div class="pm__main">' +
+              '<section aria-labelledby="pm-about">' +
+                '<h3 id="pm-about">About this property</h3>' +
+                '<p>' + escapeHTML(p.description) + '</p>' +
+                '<div class="pm__highlights">' + p.highlights.map(function (h) { return '<span class="tag tag--outline">' + escapeHTML(h) + '</span>'; }).join('') + '</div>' +
+              '</section>' +
+              '<section aria-labelledby="pm-lease">' +
+                '<h3 id="pm-lease">Occupancy &amp; lease details</h3>' +
+                '<dl class="facts">' +
+                  '<div><dt>Built-up area (demo)</dt><dd>' + intIN.format(p.area) + ' sq ft</dd></div>' +
+                  '<div><dt>Occupancy</dt><dd>' + escapeHTML(occLabel(p)) + '</dd></div>' +
+                  '<div><dt>Tenant profile</dt><dd>' + escapeHTML(p.tenant || 'Not specified') + '</dd></div>' +
+                  '<div><dt>Lease term</dt><dd>' + escapeHTML(p.leaseTerm || 'Not specified') + '</dd></div>' +
+                  '<div><dt>Lock-in period</dt><dd>' + escapeHTML(p.lockIn || 'Not specified') + '</dd></div>' +
+                  '<div><dt>Rent escalation</dt><dd>' + escapeHTML(p.escalation || 'Not specified') + '</dd></div>' +
+                '</dl>' +
+              '</section>' +
+              '<section aria-labelledby="pm-risks">' +
+                '<h3 id="pm-risks">Risks &amp; assumptions</h3>' +
+                '<ul class="risk-list">' + risks.map(function (r) { return '<li>' + icon('alert') + '<span>' + escapeHTML(r) + '</span></li>'; }).join('') +
+                  '<li>' + icon('info') + '<span>Operating cost assumption of ' + p.opexPct + '% of gross rent is illustrative and covers items such as maintenance, property tax, insurance and management. Actual costs may be higher.</span></li>' +
+                '</ul>' +
+              '</section>' +
+            '</div>' +
+            '<aside class="fin" aria-labelledby="pm-fin">' +
+              '<p class="fin__label" id="pm-fin">Illustrative financial snapshot</p>' +
+              '<div class="fin__price"><span>Asking price (illustrative)</span><strong>' + formatINRCompact(p.price) + '</strong><small>' + formatINR(p.price) + '</small></div>' +
+              '<dl class="fin__rows">' +
+                '<div><dt>' + (p.projected ? 'Projected gross rental yield' : 'Gross rental yield') + '<small>' + escapeHTML(p.yieldBasis) + '</small></dt><dd>' + formatPct(p.grossYield) + '</dd></div>' +
+                '<div><dt>' + grossLabel + '<small>' + formatINRCompact(f.monthlyGross) + ' per month</small></dt><dd>' + formatINRCompact(f.gross) + '</dd></div>' +
+                '<div><dt>Less operating costs<small>Assumed at ' + p.opexPct + '% of gross rent</small></dt><dd>−' + formatINRCompact(f.opex).replace('−', '') + '</dd></div>' +
+                '<div class="is-total"><dt>Estimated operating income<small>Before tax and financing</small></dt><dd>' + formatINRCompact(f.noi) + '</dd></div>' +
+                '<div><dt>Implied operating yield<small>Operating income ÷ asking price</small></dt><dd>' + formatPct(f.opYield) + '</dd></div>' +
+              '</dl>' +
+              '<p class="fin__explain"><strong>Gross rent</strong> is total annual rent before any costs. <strong>Operating income</strong> deducts the assumed operating costs, but still excludes income tax, financing, transaction and advisory fees, capital expenditure and any vacancy not reflected above.</p>' +
+              '<button type="button" class="btn btn--primary btn--block" data-action="enquire" data-id="' + p.id + '">Enquire About Property ' + icon('arrow', 'icon--sm icon--arrow') + '</button>' +
+              '<button type="button" class="btn btn--outline btn--block" data-action="model-property" data-id="' + p.id + '">' + icon('calc', 'icon--sm') + ' Model in calculator</button>' +
+              '<p class="fin__disclaimer">Fictional demonstration figures calculated from this listing\'s sample data. Not verified, not an offer, and not a forecast or promise of returns.</p>' +
+            '</aside>' +
+          '</div>' +
+        '</article>';
+      openModal(html, 'lg');
+    }
+
+    function openWatchlist() {
+      openModal('<div class="modal__content" id="watchlist-content"></div>', 'md');
+      renderWatchlist();
+    }
+
+    function renderWatchlist() {
+      var c = $('#watchlist-content');
+      if (!c) return;
+      var items = watchlist.map(getProperty).filter(Boolean);
+      var html = '<h2 id="modal-title">Your watchlist</h2>' +
+        '<p class="lead">' + (storage.available ? 'Saved on this device only, in your browser\'s local storage.' : 'Browser storage is unavailable, so this list will reset when you leave the page.') + '</p>';
+      if (!items.length) {
+        html += '<div class="wl__empty">' + icon('heart', 'icon--lg') + '<p>You haven\'t saved any properties yet. Tap the heart on any listing to add it here.</p>' +
+          '<button type="button" class="btn btn--primary" data-action="goto" data-target="#properties">Browse properties</button></div>';
+      } else {
+        html += '<ul class="wl">' + items.map(function (p) {
+          return '<li class="wl__item">' +
+            '<div class="wl__thumb"><img src="' + p.image.replace('w=900', 'w=240') + '" alt="" data-label="' + escapeHTML(p.locality) + '" width="240" height="180"></div>' +
+            '<div><h3>' + escapeHTML(p.name) + '</h3><p>' + escapeHTML(p.locality) + ' · ' + formatINRCompact(p.price) + ' · ' + formatPct(p.grossYield) + ' gross yield (demo)</p></div>' +
+            '<div class="wl__actions">' +
+              '<button type="button" class="btn btn--outline btn--sm" data-action="open-property" data-id="' + p.id + '">View<span class="visually-hidden"> ' + escapeHTML(p.name) + '</span></button>' +
+              '<button type="button" class="btn btn--ghost btn--sm" data-action="remove-watch" data-id="' + p.id + '">Remove<span class="visually-hidden"> ' + escapeHTML(p.name) + '</span></button>' +
+            '</div></li>';
+        }).join('') + '</ul>';
+      }
+      c.innerHTML = html;
+    }
+
+    function openLogin() {
+      openModal(
+        '<div class="modal__content">' +
+          '<div class="feature__icon" style="margin-bottom:20px">' + icon('user') + '</div>' +
+          '<h2 id="modal-title">Investor sign-in</h2>' +
+          '<p class="lead">Accounts are not part of this prototype, so there is nothing to sign in to and no credentials are requested.</p>' +
+          '<div class="prose"><p>In a future version, an account might let you sync your watchlist across devices and track enquiries. For now, your watchlist is saved in this browser only.</p></div>' +
+          '<div class="modal__actions">' +
+            '<button type="button" class="btn btn--primary" data-action="open-watchlist">View my watchlist</button>' +
+            '<button type="button" class="btn btn--outline" data-action="goto" data-target="#contact">Make an enquiry</button>' +
+            '<button type="button" class="btn btn--ghost" data-action="close-modal">Close</button>' +
+          '</div>' +
+        '</div>');
+    }
+
+    var DOCS = {
+      privacy: {
+        title: 'Privacy Policy',
+        body:
+          '<p><strong>This website is a demonstration prototype.</strong> It has no backend server and does not transmit personal information anywhere.</p>' +
+          '<h3>What we collect</h3><p>Nothing is collected by SV Realtor. Details typed into the enquiry form are validated in your browser and discarded; they are not sent, stored or shared.</p>' +
+          '<h3>Local storage</h3><p>If you save properties to your watchlist, the property identifiers are stored in your browser\'s local storage on this device so they persist between visits. No personal information is stored. You can clear it at any time by removing every property from your watchlist or clearing this site\'s data in your browser settings.</p>' +
+          '<h3>Third-party content</h3><p>Fonts and stock photographs may be loaded from third-party content delivery networks, which may receive standard technical information (such as your IP address) when your browser requests those files.</p>' +
+          '<h3>Production use</h3><p>A real service would require a full privacy policy compliant with applicable Indian law, including the Digital Personal Data Protection Act, 2023.</p>'
+      },
+      terms: {
+        title: 'Terms of Use',
+        body:
+          '<p><strong>This website is a demonstration and does not constitute an investment offer.</strong></p>' +
+          '<ul>' +
+            '<li>All property listings, names, tenants, prices, yields, statistics and other figures are fictional and provided for demonstration only.</li>' +
+            '<li>Nothing on this website is an offer, invitation or solicitation to buy or sell any property, security, unit or other financial product, and nothing here is investment, legal, tax or financial advice.</li>' +
+            '<li>SV Realtor is not registered with the Securities and Exchange Board of India (SEBI), the Real Estate Regulatory Authority (RERA) or any other regulator, and does not claim any regulatory approval.</li>' +
+            '<li>You cannot acquire any ownership, fractional interest or entitlement to income through this website.</li>' +
+            '<li>Photographs are generic stock imagery and do not depict the fictional properties described.</li>' +
+            '<li>The prototype is provided "as is" without warranties of any kind.</li>' +
+          '</ul>'
+      },
+      risk: {
+        title: 'Risk Disclosure',
+        body:
+          '<p><strong>This website is a demonstration and does not constitute an investment offer.</strong> The following risks are typical of commercial real estate and are shown to illustrate the kind of disclosure a real service should provide.</p>' +
+          '<ul>' +
+            '<li><strong>Illiquidity:</strong> commercial property can be difficult to sell quickly or at a fair price.</li>' +
+            '<li><strong>Vacancy and tenant risk:</strong> tenants may leave, default or renegotiate, reducing or eliminating rental income.</li>' +
+            '<li><strong>Valuation risk:</strong> property values can fall, and asking prices may not reflect achievable sale prices.</li>' +
+            '<li><strong>Cost risk:</strong> operating, maintenance and capital costs may be higher than assumed.</li>' +
+            '<li><strong>Concentration risk:</strong> a single property, location or tenant exposes you to specific events.</li>' +
+            '<li><strong>Legal and regulatory risk:</strong> title defects, approvals, tax changes or regulation can affect value and income.</li>' +
+            '<li><strong>Market risk:</strong> interest rates, economic conditions and new supply influence rents and values.</li>' +
+          '</ul>' +
+          '<p>Gross rental yield is not the same as income received. Past or projected figures are not a reliable indicator of future results. Before making any real investment decision, seek independent advice from appropriately qualified and registered professionals.</p>'
+      }
+    };
+
+    function openDoc(key) {
+      var d = DOCS[key];
+      if (!d) return;
+      openModal(
+        '<div class="modal__content">' +
+          '<span class="tag tag--accent" style="margin-bottom:16px">Prototype disclosure</span>' +
+          '<h2 id="modal-title">' + d.title + '</h2>' +
+          '<div class="prose">' + d.body + '</div>' +
+          '<div class="modal__actions"><button type="button" class="btn btn--dark" data-action="close-modal">I understand</button></div>' +
+        '</div>', 'md');
+    }
+
+    /* ================================================================
+       9. INVESTMENT CALCULATOR
+       ================================================================ */
+    var CALC_DEFAULTS = { value: 50, invest: 10, yield: 8, opex: 12 };
+    var calcPairs = {
+      value: { n: $('#c-value-n'), r: $('#c-value-r') },
+      invest: { n: $('#c-invest-n'), r: $('#c-invest-r') },
+      yield: { n: $('#c-yield-n'), r: $('#c-yield-r') },
+      opex: { n: $('#c-opex-n'), r: $('#c-opex-r') }
+    };
+    function out(name) { return $('[data-out="' + name + '"]'); }
+    function setRangeFill(r) {
+      var min = parseFloat(r.min), max = parseFloat(r.max), v = parseFloat(r.value);
+      r.style.setProperty('--fill', ((v - min) / (max - min) * 100) + '%');
+    }
+    function readNum(input) {
+      var v = parseFloat(input.value);
+      return isFinite(v) && v >= 0 ? v : NaN;
+    }
+
+    function calculate() {
+      var valueCr = readNum(calcPairs.value.n), investL = readNum(calcPairs.invest.n);
+      var y = readNum(calcPairs.yield.n), opexPct = readNum(calcPairs.opex.n);
+      if (isFinite(opexPct)) opexPct = Math.min(opexPct, 100);
+
+      var value = valueCr * 1e7, invest = investL * 1e5;
+      var gross = value * y / 100;
+      var opex = gross * opexPct / 100;
+      var noi = gross - opex;
+      var opYield = value > 0 ? noi / value * 100 : NaN;
+      var exceeds = isFinite(invest) && isFinite(value) && invest > value;
+      var share = value > 0 ? Math.min(invest / value, 1) : NaN;
+
+      $('#c-invest-warn').hidden = !exceeds;
+      out('value-full').textContent = isFinite(value) && value > 0 ? formatINR(value) : 'Enter a property value';
+      out('invest-full').textContent = isFinite(invest) ? formatINR(invest) : 'Enter an amount';
+      out('noi').textContent = formatINRCompact(noi);
+      out('gross').textContent = formatINRCompact(gross);
+      out('opex').textContent = isFinite(opex) ? '−' + formatINRCompact(opex) : '—';
+      out('gross-yield').textContent = value > 0 ? formatPct(y) : '—';
+      out('op-yield').textContent = formatPct(opYield);
+      out('ownership').textContent = isFinite(share) ? formatPct(share * 100, share * 100 < 0.01 ? 4 : 3) : '—';
+      out('share-gross').textContent = isFinite(share) ? formatINR(gross * share) : '—';
+      out('share-noi').textContent = isFinite(share) ? formatINR(noi * share) : '—';
+
+      var noiPct = isFinite(opexPct) ? Math.max(0, 100 - opexPct) : 0;
+      out('bar-noi').style.width = noiPct + '%';
+      out('bar-opex').style.width = (isFinite(opexPct) ? opexPct : 0) + '%';
+    }
+
+    function setCalc(values) {
+      Object.keys(values).forEach(function (k) {
+        var pair = calcPairs[k];
+        if (!pair) return;
+        pair.n.value = values[k];
+        pair.r.value = Math.min(Math.max(values[k], parseFloat(pair.r.min)), parseFloat(pair.r.max));
+        setRangeFill(pair.r);
+      });
+      calculate();
+    }
+
+    function initCalculator() {
+      Object.keys(calcPairs).forEach(function (k) {
+        var pair = calcPairs[k];
+        pair.r.addEventListener('input', function () {
+          pair.n.value = pair.r.value;
+          setRangeFill(pair.r);
+          calculate();
+        });
+        pair.n.addEventListener('input', function () {
+          var v = parseFloat(pair.n.value);
+          if (isFinite(v)) {
+            pair.r.value = Math.min(Math.max(v, parseFloat(pair.r.min)), parseFloat(pair.r.max));
+            setRangeFill(pair.r);
+          }
+          calculate();
+        });
+      });
+      $('#calc-form').addEventListener('submit', function (e) { e.preventDefault(); });
+      $('#calc-form').addEventListener('reset', function (e) {
+        e.preventDefault();
+        setCalc(CALC_DEFAULTS);
+        toast('Calculator reset to default assumptions', 'calc');
+      });
+      setCalc(CALC_DEFAULTS);
+    }
+
+    function modelProperty(id) {
+      var p = getProperty(id);
+      if (!p) return;
+      closeModal(false);
+      setCalc({ value: p.price / 1e7, yield: p.grossYield, opex: p.opexPct });
+      scrollToEl($('#calculator'), $('#calc-title'));
+      var calcEl = $('#calc');
+      calcEl.classList.remove('flash'); void calcEl.offsetWidth; calcEl.classList.add('flash');
+      toast('Calculator loaded with ' + p.name + ' demo figures', 'calc');
+    }
+
+    /* ================================================================
+       10. ENQUIRY FORM
+       ================================================================ */
+    var form = $('#enquiry-form'), successEl = $('#enquiry-success');
+    var formSubmitted = false;
+    var validators = {
+      name: function (v) {
+        v = v.trim();
+        if (!v) return 'Please enter your full name.';
+        if (v.length < 2) return 'Name must be at least 2 characters.';
+        return '';
+      },
+      email: function (v) {
+        v = v.trim();
+        if (!v) return 'Please enter your email address.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'Please enter a valid email address, e.g. name@example.com.';
+        return '';
+      },
+      phone: function (v) {
+        var digits = v.replace(/[\s\-().]/g, '');
+        if (!digits) return 'Please enter your phone number.';
+        if (!/^(\+91|91|0)?[6-9]\d{9}$/.test(digits)) return 'Please enter a valid 10-digit Indian mobile number.';
+        return '';
+      },
+      property: function (v) { return v ? '' : 'Please choose a property, or select "General enquiry".'; },
+      consent: function (v, el) { return el.checked ? '' : 'Please confirm you understand this is a prototype.'; }
+    };
+
+    function populatePropertySelect() {
+      var sel = $('#e-property');
+      PROPERTIES.forEach(function (p) {
+        var o = document.createElement('option');
+        o.value = p.id; o.textContent = p.name + ' — ' + p.locality;
+        sel.appendChild(o);
+      });
+      var g = document.createElement('option');
+      g.value = 'general'; g.textContent = 'General enquiry — no specific property';
+      sel.appendChild(g);
+    }
+
+    function validateField(name) {
+      var el = form.elements[name], fn = validators[name];
+      if (!el || !fn) return true;
+      var msg = fn(el.value || '', el);
+      var wrap = form.querySelector('[data-field="' + name + '"]');
+      wrap.classList.toggle('has-error', !!msg);
+      el.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      var err = wrap.querySelector('.field-error span');
+      if (err) err.textContent = msg;
+      return !msg;
+    }
+
+    function initForm() {
+      populatePropertySelect();
+      var msg = $('#e-message'), count = $('#e-message-count');
+      msg.addEventListener('input', function () { count.textContent = msg.value.length + ' / 1000'; });
+
+      Object.keys(validators).forEach(function (name) {
+        var el = form.elements[name];
+        var evt = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
+        el.addEventListener(evt, function () { if (formSubmitted) validateField(name); });
+        el.addEventListener('blur', function () { if (formSubmitted || el.value) validateField(name); });
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        formSubmitted = true;
+        var firstInvalid = null;
+        Object.keys(validators).forEach(function (name) {
+          if (!validateField(name) && !firstInvalid) firstInvalid = form.elements[name];
+        });
+        var summary = $('#form-error-summary');
+        if (firstInvalid) {
+          summary.hidden = false;
+          firstInvalid.focus();
+          return;
+        }
+        summary.hidden = true;
+        showSuccess();
+      });
+    }
+
+    function showSuccess() {
+      var name = form.elements.name.value.trim();
+      var propSel = form.elements.property;
+      var propText = propSel.options[propSel.selectedIndex].textContent;
+      var budget = form.elements.budget.value || 'Not specified';
+      successEl.innerHTML =
+        '<div class="success__icon">' + icon('check') + '</div>' +
+        '<h3>Thank you, ' + escapeHTML(name.split(/\s+/)[0]) + '. Your enquiry passed validation.</h3>' +
+        '<p><strong>This is a prototype.</strong> Your enquiry has not been sent to a real server, and none of your details have been stored or shared. In a live service, this is where a confirmation would appear.</p>' +
+        '<dl class="summary">' +
+          '<div><dt>Property</dt><dd>' + escapeHTML(propText) + '</dd></div>' +
+          '<div><dt>Budget</dt><dd>' + escapeHTML(budget) + '</dd></div>' +
+          '<div><dt>Status</dt><dd>Not sent (prototype)</dd></div>' +
+        '</dl>' +
+        '<button type="button" class="btn btn--outline" data-action="new-enquiry">Submit another enquiry</button>';
+      form.hidden = true;
+      successEl.hidden = false;
+      successEl.focus();
+      toast('Enquiry validated — not sent (prototype)', 'check');
+    }
+
+    function newEnquiry() {
+      form.reset();
+      formSubmitted = false;
+      $$('.field.has-error', form).forEach(function (f) { f.classList.remove('has-error'); });
+      $$('[aria-invalid]', form).forEach(function (f) { f.removeAttribute('aria-invalid'); });
+      $('#e-message-count').textContent = '0 / 1000';
+      successEl.hidden = true;
+      form.hidden = false;
+      form.elements.name.focus();
+    }
+
+    function enquire(id) {
+      var p = getProperty(id);
+      closeModal(false);
+      if (!form.hidden) {
+        form.elements.property.value = id;
+        if (formSubmitted) validateField('property');
+      } else {
+        newEnquiry();
+        form.elements.property.value = id;
+      }
+      scrollToEl($('#contact'), form.elements.name);
+      if (p) toast(p.name + ' selected in the enquiry form', 'chat');
+    }
+
+    /* ================================================================
+       11. NAVIGATION, SCROLLING & REVEAL
+       ================================================================ */
+    var header = $('#site-header'), menuToggle = $('#menu-toggle'), mobileMenu = $('#mobile-menu');
+
+    function setMenu(open) {
+      menuToggle.setAttribute('aria-expanded', String(open));
+      menuToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      menuToggle.querySelector('use').setAttribute('href', open ? '#i-close' : '#i-menu');
+      mobileMenu.classList.toggle('is-open', open);
+    }
+
+    function initNav() {
+      menuToggle.addEventListener('click', function () { setMenu(menuToggle.getAttribute('aria-expanded') !== 'true'); });
+      window.addEventListener('resize', debounce(function () { if (window.innerWidth > 1060) setMenu(false); }, 150));
+
+      /* In-page anchors: smooth scroll + move focus to the section heading */
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="#"]');
+        if (!a) return;
+        var hash = a.getAttribute('href');
+        if (hash === '#' || hash === '#main') return;
+        var target = document.getElementById(hash.slice(1));
+        if (!target) return;
+        e.preventDefault();
+        setMenu(false);
+        var focusTarget = target.querySelector('[tabindex="-1"]') || target.querySelector('h1, h2');
+        if (focusTarget && !focusTarget.hasAttribute('tabindex')) focusTarget.setAttribute('tabindex', '-1');
+        scrollToEl(target, focusTarget);
+        if (history.pushState) history.pushState(null, '', hash);
+      });
+
+      /* Header shadow + back-to-top visibility */
+      var btt = $('#back-to-top');
+      var onScroll = function () {
+        var y = window.scrollY || window.pageYOffset;
+        header.classList.toggle('is-scrolled', y > 8);
+        btt.classList.toggle('is-visible', y > 700);
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      /* Active nav link */
+      if ('IntersectionObserver' in window) {
+        var sections = ['home', 'properties', 'how-it-works', 'about', 'contact'].map(function (id) { return document.getElementById(id); });
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              var id = entry.target.id;
+              $$('.nav-link').forEach(function (l) {
+                var active = l.getAttribute('data-nav') === id;
+                l.classList.toggle('is-active', active);
+                if (active) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current');
+              });
+            }
+          });
+        }, { rootMargin: '-45% 0px -50% 0px' });
+        sections.forEach(function (s) { if (s) io.observe(s); });
+      }
+    }
+
+    function initReveal() {
+      var items = $$('.reveal');
+      if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('is-visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); }
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+      items.forEach(function (el) { io.observe(el); });
+    }
+
+    /* ================================================================
+       12. GLOBAL EVENT DELEGATION & KEYBOARD
+       ================================================================ */
+    function goTo(selector) {
+      closeModal(false);
+      var target = $(selector);
+      if (!target) return;
+      var focusTarget = target.querySelector('[tabindex="-1"]') || target.querySelector('h2');
+      scrollToEl(target, focusTarget);
+    }
+
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-action]');
+      if (!el) return;
+      var action = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+      switch (action) {
+        case 'open-property': setMenu(false); openProperty(id); break;
+        case 'toggle-watch': toggleWatch(id); break;
+        case 'remove-watch':
+          toggleWatch(id);
+          renderWatchlist();
+          var title = $('#modal-title'); if (title) { title.setAttribute('tabindex', '-1'); title.focus(); }
+          break;
+        case 'open-watchlist': setMenu(false); openWatchlist(); break;
+        case 'open-login': setMenu(false); openLogin(); break;
+        case 'open-doc': openDoc(el.getAttribute('data-doc')); break;
+        case 'close-modal': closeModal(); break;
+        case 'enquire': enquire(id); break;
+        case 'model-property': modelProperty(id); break;
+        case 'reset-filters': resetFilters(true); break;
+        case 'goto': goTo(el.getAttribute('data-target')); break;
+        case 'new-enquiry': newEnquiry(); break;
+        case 'dismiss-banner':
+          $('#demo-banner').hidden = true;
+          $('.logo').focus();
+          break;
+        case 'back-to-top':
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+          try { $('#hero-title').focus({ preventScroll: true }); } catch (err) { $('#hero-title').focus(); }
+          break;
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (modalState.open) { e.preventDefault(); closeModal(); return; }
+        if (menuToggle.getAttribute('aria-expanded') === 'true') { setMenu(false); menuToggle.focus(); }
+      }
+      if (e.key === 'Tab' && modalState.open) trapFocus(e);
+    });
+
+    /* ================================================================
+       13. INIT
+       ================================================================ */
+    $('#year').textContent = new Date().getFullYear();
+    renderHero();
+    renderFeatured();
+    initFilters();
+    initCalculator();
+    initForm();
+    initNav();
+    initReveal();
+    updateWatchCount(false);
+  })();
+  </script>
+</body>
+</html>
