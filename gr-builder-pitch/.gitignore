@@ -1,0 +1,5 @@
+frames/
+frames_v/
+subframes/
+*.wav.tmp
+node_modules/
