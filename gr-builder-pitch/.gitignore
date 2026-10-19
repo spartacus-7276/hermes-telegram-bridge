@@ -1,0 +1,7 @@
+frames/
+frames_v/
+subframes/
+*.wav.tmp
+node_modules/
+gen/
+__pycache__/
