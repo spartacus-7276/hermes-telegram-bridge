@@ -5,3 +5,4 @@ subframes/
 node_modules/
 gen/
 __pycache__/
+out/qa/build.log
