@@ -25,8 +25,9 @@ const sp = (t, t0, k = 12) => { const d = t - t0; return d <= 0 ? 0 : 1 - (1 + k
 const ss = (t, a, b) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
 const eio = x => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 const ein = x => x * x * x;
-const mixc = (c1, c2, p) => { // hex colours
-  const a = [1, 3, 5].map(i => parseInt(c1.slice(i, i + 2), 16)), b = [1, 3, 5].map(i => parseInt(c2.slice(i, i + 2), 16));
+const rgbOf = c => (c[0] === '#' ? [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)) : c.match(/[\d.]+/g).slice(0, 3).map(Number));
+const mixc = (c1, c2, p) => { // '#rrggbb' or 'rgb(...)' colours, so mixes can nest
+  const a = rgbOf(c1), b = rgbOf(c2);
   return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], p))).join(',')})`;
 };
 function wt(id, word, nth = 0) {
@@ -162,7 +163,9 @@ function card(p) {
 function noCard() { CARD.style.display = 'none'; }
 
 // photos: cover the frame, positioned by (ox, oy) at scale sc
-const PHOTO = (scn, name, ox, oy, sc) => css(IMG('../gen/photos/' + name + '.jpg', scn.push), { left: ox, top: oy, width: (name.includes('tall') ? 1024 : 1536) * sc });
+const PHOTO = (scn, name, ox, oy, sc) => css(IMG('../gen/photos/' + name + '.jpg', scn.push),
+  { left: ox, top: oy, width: (name.includes('screen') ? (name.includes('tall') ? 941 : 1672) : (name.includes('tall') ? 1024 : 1536)) * sc });
+const PS = 1920 / 1672; // the screen plates cover the frame at 1.148 in both shapes
 
 // ================================================================== 1. hook (0 - 5.2)
 const s1 = scene(0, 5.2);
@@ -279,7 +282,7 @@ thread.setAttribute('stroke-linecap', 'round'); svg3.appendChild(thread);
 const chipA = E('div', 'chip', s3.push, '<i></i>Enquiry'), chipB = E('div', 'chip', s3.push, '<i></i>Site visit');
 const TGR = wt('p04', 'golden'), TGAP = wt('p04', 'gap'), TENQ = wt('p04', 'enquiry'), TSITE = wt('p04', 'site'), TVIS = wt('p04', 'visit');
 cue(TGR, 'impact', .6); cue(TVIS + .02, 'thump', .7);
-const BT = pick([1160, 531, 200 / 520], [636, 955, 175 / 520]); // the button under the thumb in photo 03 / 03b
+const BT = pick([1027 * PS, 677 * PS, 285 * PS / 520], [543 * PS, 1032 * PS, 268 * PS / 520]); // the WhatsApp button under the thumb
 s3.render = t => {
   push(s3, t, W / 2, H / 2);
   const lp = sp(t, TGR, 4.2);
@@ -313,12 +316,12 @@ s3.render = t => {
 
 // ================================================================== 4. WhatsApp AI (17.2 - 27.6)
 const s4a = scene(17.2, 19.6);
-const P4 = pick({ ox: 0, oy: -100, s: 1.25, f: [1195, 394] }, { ox: -100, oy: 0, s: 1.25, f: [672, 809] });
-PHOTO(s4a, pick('03-thumb-tap', '03b-thumb-tap-tall'), P4.ox, P4.oy, P4.s);
+const P4 = pick({ ox: 0, oy: 0, s: PS, f: [1030 * PS, 470 * PS] }, { ox: 0, oy: 0, s: PS, f: [545 * PS, 815 * PS] });
+PHOTO(s4a, pick('03c-thumb-tap-screen', '03d-thumb-tap-screen-tall'), P4.ox, P4.oy, P4.s);
 const ring4 = css(E('div', 'abs', s4a.push), { width: 60, height: 60, borderRadius: '50%', border: '3px solid rgba(255,255,255,.9)' });
 s4a.render = t => {
   if (t < 19.0) push(s4a, t, P4.f[0], P4.f[1], 1, 1.04, 17.2, 19.0);
-  else setPush(s4a, P4.f[0], P4.f[1], lerp(1.04, 3.0, ein(clamp((t - 19.0) / .6))));
+  else setPush(s4a, P4.f[0], P4.f[1], lerp(1.04, 2.4, ein(clamp((t - 19.0) / .6))));
   const rp = clamp((t - 17.42) / .45);
   put(ring4, BT[0], BT[1], lerp(.3, 1.6, eio(rp)), rp > 0 && rp < 1 ? (1 - rp) * .9 : 0);
 };
@@ -539,8 +542,8 @@ const T5X = (W - T5.width * T5.z) / 2;
 const t5s = (cx, cy) => [T5X + cx * T5.z, T5.top + 130 * T5.z + cy * T5.z];
 const TTODAY = wt('p09', "today's");
 // the phone on the breakfast table (07 / 07b, framed close so the composited call screen reads)
-const P6 = pick({ ox: -230, oy: -290, s: 1.4, x: 1320, y: 870, w: 292, h: 126, r: -13.5, ring: [1249, 888] },
-  { ox: -558, oy: -538, s: 1.6, x: 768, y: 1269, w: 323, h: 162, r: -16.9, ring: [690, 1292] });
+const P6 = pick({ ox: 0, oy: 0, s: PS, x: 1148 * PS, y: 715 * PS, w: 340 * PS, h: 290 * PS, r: 6, ring: [1160 * PS, 650 * PS] },
+  { ox: 0, oy: 0, s: PS, x: 636 * PS, y: 1230 * PS, w: 470 * PS, h: 430 * PS, r: 9.6, ring: [657 * PS, 1133 * PS] });
 s5c.render = t => {
   push(s5c, t, W / 2, H / 2);
   tl(title5, T5.title[0], T5.title[1], T5.z * .95, 1);
@@ -557,13 +560,13 @@ s5c.render = t => {
   const a = sp(t, 36.9, 10), m = sp(t, 38.82, 9), dark = ss(m, .05, .45);
   card({ parent: s5c.push, x: lerp(lerp(W + 400, vx, a), P6.x, m), y: lerp(vs[1], P6.y, m), r: lerp(0, P6.r, m),
     s: lerp(CS, 1, m), w: lerp(CW, P6.w, m), h: lerp(CH, P6.h, m), radius: lerp(22, 16, m), bg: mixc('#FFFFFF', '#141210', dark),
-    border: `rgba(169,128,63,${1 - dark})`, face: 1 - ss(m, 0, .3), ring: ss(m, .35, .7),
+    border: `rgba(169,128,63,${1 - dark})`, face: 1 - ss(m, 0, .25), ring: ss(m, .2, .5),
     o: t < TTODAY + .1 || t >= 38.82 ? 1 : 0, sub: t < 38.82 ? 'follow' : 'calling', tag: 'today' });
 };
 
 // ================================================================== 6. AI calling (39.25 - 44.6)
 const s6a = scene(39.25, 41.6);
-PHOTO(s6a, pick('07-morning-call', '07b-morning-call-tall'), P6.ox, P6.oy, P6.s);
+PHOTO(s6a, pick('07c-morning-call-screen', '07d-morning-call-screen-tall'), P6.ox, P6.oy, P6.s);
 const rings6 = [0, 1].map(() => css(E('div', 'abs', s6a.push), { width: 90, height: 90, borderRadius: '50%', border: '3px solid rgba(225,195,135,.95)' }));
 const RINGT = [39.5, 40.4];
 RINGT.forEach(t => cue(t, 'ring', .8));
@@ -571,7 +574,7 @@ s6a.render = t => {
   push(s6a, t, P6.x, P6.y);
   rings6.forEach((r, i) => {
     const p = clamp((t - RINGT[i]) / .8), sc = lerp(.4, 1.6, eio(p));
-    r.style.transform = `translate(${P6.ring[0]}px,${P6.ring[1]}px) translate(-50%,-50%) rotate(${P6.r}deg) scale(${sc},${sc * .5})`;
+    r.style.transform = `translate(${P6.ring[0]}px,${P6.ring[1]}px) translate(-50%,-50%) rotate(${P6.r}deg) scale(${sc * 1.3},${sc})`;
     r.style.opacity = p > 0 && p < 1 ? (1 - p) * .9 : 0;
   });
 };
@@ -623,9 +626,8 @@ s6b.render = t => {
 
 // ================================================================== 7. analytics + AI tips (44.6 - 53.4)
 const s7a = scene(44.6, 46.6);
-// 9:16: photo 10 has no tall version; the frame holds the owner, looking toward the screen off right
-const P7 = pick({ ox: 0, oy: -60, s: 1.25, f: [1560, 400], z0: 1.22, z1: 3.0 }, { ox: -300, oy: 0, s: 1.875, f: [1080, 700], z0: 1.15, z1: 1.6 });
-PHOTO(s7a, '10-owner-analytics', P7.ox, P7.oy, P7.s);
+const P7 = pick({ ox: 0, oy: 0, s: PS, f: [1230 * PS, 450 * PS], z0: 1.22, z1: 2.3 }, { ox: 0, oy: 0, s: PS, f: [625 * PS, 450 * PS], z0: 1.2, z1: 1.9 });
+PHOTO(s7a, pick('10c-owner-analytics-screen', '10d-owner-analytics-screen-tall'), P7.ox, P7.oy, P7.s);
 s7a.render = t => {
   const back = lerp(P7.z0, 1.0, sp(Math.min(t, 45.95), 44.6, 4.5));
   setPush(s7a, P7.f[0], P7.f[1], t < 45.95 ? back : lerp(back, P7.z1, ein(clamp((t - 45.95) / .65))));
@@ -651,18 +653,20 @@ const KPI = TILEX.map((a0, i) => {
 const C7 = L7.chart;
 const chartEl = css(E('div', 'chart', s7b.push), { left: C7.x, top: C7.y, width: C7.w, height: C7.h });
 css(E('div', 't', chartEl, 'Bookings by channel'), { left: 40, top: 30, fontSize: C7.t });
-css(E('div', 's', chartEl, 'This month · each dot is one booking'), { left: 40, top: 30 + C7.t * 1.3, fontSize: C7.s });
+css(E('div', 's', chartEl, 'This month'), { left: 40, top: 30 + C7.t * 1.3, fontSize: C7.s });
 css(E('div', 'rule', chartEl), { top: C7.top - 14 });
 const CHN = [['WhatsApp', 3, 4], ['Website', 1, 1], ['Google Ads', 1, 1], ['Instagram', 0, 0]];
+const TW = C7.w - 4 - 80 - C7.lw - 70, BH = C7.dot; // bar track width and bar height
 const chRows = CHN.map(([lb, n0, n1], i) => {
   const r = css(E('div', 'row', chartEl), { left: 40, right: 40, top: C7.top + i * C7.rowH, height: C7.rowH });
   css(E('div', 'lb', r, lb), { width: C7.lw, fontSize: C7.lb });
-  const dots = E('div', 'dots', r); const n = css(E('div', 'n', r, String(n1)), { width: 120, fontSize: C7.n });
-  const ds = [...Array(n0).keys()].map(k => css(E('div', 'dot', dots), { left: k * C7.dx, width: C7.dot, height: C7.dot, marginTop: -C7.dot / 2 }));
-  return { ds, n, n0, n1, dots };
+  const track = css(E('div', 'track', r), { width: TW, height: BH });
+  const bar = css(E('div', 'bar', track), { height: BH, width: 0 });
+  const n = css(E('div', 'n', track, String(n1)), { fontSize: C7.n, lineHeight: BH + 'px' });
+  return { bar, n, n0, n1 };
 });
-const kdot = css(E('div', 'dot', chRows[0].dots), { left: 3 * C7.dx, width: C7.dot, height: C7.dot, marginTop: -C7.dot / 2, background: '#1E9E57' });
-const DOTXY = [C7.x + 2 + 40 + C7.lw + 3 * C7.dx + C7.dot / 2, C7.y + 2 + C7.top + C7.rowH / 2]; // Karan's dot, screen px
+const kseg = css(E('div', 'bar', chRows[0].bar.parentNode), { height: BH, left: TW * 3 / 4, width: TW / 4, background: '#1E9E57' }); // Karan's booking
+const DOTXY = [C7.x + 2 + 40 + C7.lw + TW * 7 / 8, C7.y + 2 + C7.top + C7.rowH / 2]; // the centre of Karan's segment, screen px
 const scrim = E('div', 'scrim', s7b.push);
 // AI tips: the real card at 0.68 (29 px) in 16:9; set as HTML at 35 px in 9:16
 let tipsWrap, tipRows, TIPW, TIPH, TIPS;
@@ -700,21 +704,24 @@ s7b.render = t => {
   tl(title7, L7.title[0], L7.title[1], L7.title[2], 1);
   KPI.forEach((k, i) => {
     const p = sp(t, KT[i], 14);
-    k.o.style.transform = `translateY(${-p * k.h}px)`; k.o.style.opacity = i === 0 ? 0 : 1 - ss(p, .5, 1); // leads roll in from empty
+    k.o.style.opacity = 0; // the wall screen already shows the new totals, so every counter rolls in from empty on its word
     k.n.style.transform = `translateY(${(1 - p) * k.h}px)`; k.n.style.opacity = ss(p, 0, .5);
   });
   chRows.forEach((r, i) => {
-    r.ds.forEach((d, k) => { d.style.transform = `scale(${sp(t, 46.75 + i * .1 + k * .05, 16)})`; });
-    const ti = TCHAN + i * .06;
-    r.n.style.opacity = ss(t, ti, ti + .12); r.n.style.transform = `translateY(${(1 - sp(t, ti, 15)) * 20}px)`;
-    r.n.textContent = String(i === 0 && t < TBOOK ? r.n0 : r.n1);
+    const w = TW * r.n0 / 4 * sp(t, 46.75 + i * .1, 9);
+    r.bar.style.width = w + 'px';
+    const n = i === 0 && t >= TBOOK ? r.n1 : r.n0, wend = i === 0 && t >= TBOOK ? TW : w;
+    r.n.textContent = String(n);
+    r.n.style.left = (wend + 18) + 'px';
+    r.n.style.opacity = ss(t, 46.9 + i * .1, 47.05 + i * .1);
   });
+  kseg.style.opacity = t >= TBOOK - .02 ? 1 : 0;
+  kseg.style.background = mixc('#1E9E57', '#B48A49', ss(t, TBOOK + .5, TBOOK + 1.4));
   // Karan's card turns green as booked, then folds into one dot
   const a = sp(t, 46.62, 9), f = sp(t, TBOOK - .42, 9), g = ss(t, 46.95, 47.25);
-  kdot.style.transform = `scale(${t >= TBOOK - .02 ? 1 : 0})`;
   if (t < TBOOK - .02) {
     card({ parent: s7b.push, x: lerp(KCARD[0], DOTXY[0], f), y: lerp(lerp(H + 150, KCARD[1], a), DOTXY[1], f),
-      w: lerp(CW, C7.dot / CS, f), h: lerp(CH, C7.dot / CS, f), radius: lerp(22, C7.dot / CS / 2, f),
+      w: lerp(CW, TW / 4 / CS, f), h: lerp(CH, BH / CS, f), radius: lerp(22, 6 / CS, f),
       bg: mixc(mixc('#FFFFFF', '#EEF8F1', g), '#1E9E57', ss(f, .2, .7)),
       border: g > 0 ? `rgba(30,158,87,${g})` : 'rgba(169,128,63,1)', face: 1 - ss(f, .05, .35),
       sub: 'booked', tag: g > .5 ? 'booked' : 'today', avbg: mixc('#F4ECDF', '#DDF2E5', g), avfg: g > .5 ? '#17804A' : '#A9803F' });

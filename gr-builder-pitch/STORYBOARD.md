@@ -51,3 +51,9 @@ The rule: at 1920x1080, nothing the viewer needs to read is under 24 px, and bod
 - **Scene 2:** Karan's card and the three "Another builder" cards are 1.5x the first cut.
 - **Scene 6:** the breakfast-table photo is framed at 1.4x (07) and 1.6x (07b), so the composited ringing screen reads before the transcript.
 - **Captions:** with captions on, the 16:9 chat phone and the 9:16 full-screen chat stop above the caption strip.
+
+## Round 3: supplied screen plates
+
+The thumb tap (03), breakfast-table call (07) and owner at the wall screen (10) now use the supplied plates, which have the screens built in (`assets/photos/03c/03d`, `07c/07d`, `10c/10d`, 1672x941 and 941x1672, covering the frame at 1.148x). Every hand-off is re-measured on them: the card becomes the WhatsApp button under the thumb, and later morphs onto the call screen on the table (+6° / +9.6°). The 9:16 version now pushes into the owner's wall screen too.
+
+"Bookings by channel" uses bars to match the wall screen. Karan's card folds into the fourth segment of the WhatsApp bar (green, settling to gold). The wall screen already shows the new totals, so the four KPI counters roll in from empty on "leads", "visits", "bookings" and "channel" instead of rolling from the old values.

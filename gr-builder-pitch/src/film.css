@@ -39,7 +39,7 @@ img{user-select:none}
 .tick svg{width:30px;height:30px}
 
 /* the card as the incoming AI call (landscape, like the phone on the table) */
-.lead .ringf{position:absolute;inset:0;display:flex;align-items:center;gap:16px;padding:0 22px;color:#fff;opacity:0}
+.lead .ringf{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:#fff;opacity:0}
 .lead .ringf .nh{flex:none;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#E9CF98,#A9803F 70%);
   color:#2A2116;display:flex;align-items:center;justify-content:center;font:700 26px Inter}
 .lead .ringf .rn{font:600 26px Inter;white-space:nowrap}
@@ -111,9 +111,9 @@ html[data-shape="9x16"] .q .serif{font-size:90px}
 .chart .rule{position:absolute;left:0;right:0;height:2px;background:#EFEDEA}
 .chart .row{position:absolute;display:flex;align-items:center;border-bottom:2px solid #F3F1EE}
 .chart .lb{font-weight:500}
-.chart .dots{position:relative;flex:1;height:100%}
-.chart .dot{position:absolute;top:50%;border-radius:50%;background:var(--gold)}
-.chart .n{text-align:right;font-weight:600}
+.chart .track{position:relative;flex:none;border-radius:8px;background:#F1EFEB}
+.chart .bar{position:absolute;left:0;top:0;border-radius:8px;background:#B48A49}
+.chart .n{position:absolute;top:0;font-weight:600;white-space:nowrap}
 .tile{position:absolute;background:#fff;border:2px solid #ECEAE7;border-radius:22px;overflow:hidden}
 .crop{position:absolute;overflow:hidden}
 .crop img{position:absolute;display:block}

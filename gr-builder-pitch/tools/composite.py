@@ -29,6 +29,10 @@ JOBS = {
     "08-site-visit": ("plain", None), "08b-site-visit-tall": ("plain", None),
     "09-handshake-keys": ("plain", None),
     "10-owner-analytics": ("overview", None),
+    # supplied plates with the screens already in place (they replace 03, 07 and 10 in the film)
+    "03c-thumb-tap-screen": ("plain", None), "03d-thumb-tap-screen-tall": ("plain", None),
+    "07c-morning-call-screen": ("plain", None), "07d-morning-call-screen-tall": ("plain", None),
+    "10c-owner-analytics-screen": ("plain", None), "10d-owner-analytics-screen-tall": ("plain", None),
 }
 
 
