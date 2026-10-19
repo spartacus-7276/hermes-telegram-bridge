@@ -1,6 +1,7 @@
 """Encode a frame folder + the mix to H.264 CRF 18 yuv420p, plus a 720p WhatsApp copy and (optionally) a poster.
     python tools/encode.py frames/16x9 out/builder-pitch-16x9 [--poster 64.0]"""
 import argparse
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,10 +18,12 @@ from PIL import Image
 w, h = Image.open(first).size
 base = [ff, "-y", "-loglevel", "error", "-framerate", "60", "-i", str(frames / "%05d.jpg"), "-i", str(audio), "-map", "0:v", "-map", "1:a"]
 subprocess.run(base + ["-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-profile:v", "high",
-                       "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-movflags", "+faststart", f"{name}.mp4"], check=True)
+                       "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-movflags", "+faststart", f"{name}.part.mp4"], check=True)
+os.replace(f"{name}.part.mp4", f"{name}.mp4")  # only a finished file ever carries the final name
 sw, sh_ = (1280, 720) if w > h else (720, 1280)
 subprocess.run(base + ["-vf", f"scale={sw}:{sh_}:flags=lanczos", "-c:v", "libx264", "-preset", "slow", "-crf", "21", "-pix_fmt", "yuv420p",
-                       "-profile:v", "high", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", f"{name}-whatsapp.mp4"], check=True)
+                       "-profile:v", "high", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", f"{name}-whatsapp.part.mp4"], check=True)
+os.replace(f"{name}-whatsapp.part.mp4", f"{name}-whatsapp.mp4")
 if a.poster is not None:
     Image.open(frames / f"{int(round(a.poster * 60)):05d}.jpg").save(f"{name}-poster.jpg", quality=92)
 print("encoded", name)

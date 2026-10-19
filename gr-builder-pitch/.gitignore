@@ -6,3 +6,4 @@ node_modules/
 gen/
 __pycache__/
 out/qa/build.log
+*.part.mp4
