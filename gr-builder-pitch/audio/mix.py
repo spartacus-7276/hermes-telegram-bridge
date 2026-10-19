@@ -7,9 +7,10 @@ Loudness: one static gain brings the mix to -14 LUFS integrated, then a true-pea
 The same gain is applied to both stems, so voice.wav + sfx.wav sum to the mix (before the limiter).
 
 Writes out/audio/mix.wav, out/audio/voice.wav, out/audio/sfx.wav (48 kHz stereo, 24-bit).
-    python audio/mix.py
+    python audio/mix.py [--lang hi]   (Hindi: voice from audio-hi/, cues from gen/cues-hi.json, 80.6 s, to out/hi/audio/)
 """
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -20,8 +21,11 @@ from scipy.ndimage import minimum_filter1d
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
-OUT = ROOT / "out" / "audio"; OUT.mkdir(parents=True, exist_ok=True)
-SR, DUR = 48000, 66.3
+LANG = sys.argv[sys.argv.index("--lang") + 1] if "--lang" in sys.argv else "en"
+HI = LANG == "hi"
+VO = ROOT / ("audio-hi" if HI else "audio")
+OUT = ROOT / "out" / ("hi/audio" if HI else "audio"); OUT.mkdir(parents=True, exist_ok=True)
+SR, DUR = 48000, (80.6 if HI else 66.3)
 N = int(SR * DUR)
 rng = np.random.default_rng(42)  # seeded: the same mix every run
 
@@ -155,14 +159,14 @@ def limiter(x, ceiling_db=-1.0, release=.08):
 
 
 def main():
-    timing = json.loads((HERE / "timing.json").read_text())
+    timing = json.loads((VO / "timing.json").read_text(encoding="utf-8"))
     voice = np.zeros((2, N)); sfx = np.zeros((2, N))
     for line in timing:
-        x, sr = sf.read(HERE / "vo" / f"{line['id']}.wav", dtype="float64")
+        x, sr = sf.read(VO / "vo" / f"{line['id']}.wav", dtype="float64")
         assert sr == SR
         i = int(round(line["start"] * SR))
         voice[:, i: i + len(x)] += st(x)[:, : N - i]
-    for c in json.loads((ROOT / "gen" / "cues.json").read_text()):
+    for c in json.loads((ROOT / "gen" / ("cues-hi.json" if HI else "cues.json")).read_text()):
         x = SYNTH[c["type"]]()
         x = x / np.abs(x).max() * 10 ** ((LEVEL[c["type"]] + 20 * np.log10(c["gain"])) / 20)
         place(sfx, x, c["t"])

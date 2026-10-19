@@ -12,9 +12,12 @@ const V = SHAPE === '9x16';
 const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
 const Q = new URLSearchParams(location.search);
 const CAP = Q.get('captions') || '0';
-const LAY = window.LAYERS, TM = window.TIMING;
+const LANG = Q.get('lang') === 'hi' ? 'hi' : 'en';
+const HI = LANG === 'hi';
+document.documentElement.dataset.lang = LANG;
+const LAY = window.LAYERS, TM_EN = window.TIMING, TM = HI ? window.TIMING_HI : window.TIMING;
 const pick = (a, b) => (V ? b : a);
-const END = 66.3;
+const END_EN = 66.3, END = HI ? 80.6 : END_EN; // voice end + 4 s
 const CS = pick(1, 1.3); // lead-card scale for the shape
 
 // ------------------------------------------------------------------ math
@@ -30,11 +33,47 @@ const mixc = (c1, c2, p) => { // '#rrggbb' or 'rgb(...)' colours, so mixes can n
   const a = rgbOf(c1), b = rgbOf(c2);
   return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], p))).join(',')})`;
 };
-function wt(id, word, nth = 0) {
-  const l = TM.find(x => x.id === id); let k = 0;
-  const norm = x => x.replace(/[.,?:!]+$/g, '').toLowerCase();
+function wtIn(tm, id, word, nth = 0) {
+  const l = tm.find(x => x.id === id); let k = 0;
+  const norm = x => x.replace(/[.,?:!\u0964]+$/g, '').toLowerCase();
   for (const w of l.words) if (norm(w.w) === norm(word) && k++ === nth) return w.t;
   throw new Error(`no word ${id}/${word}`);
+}
+/* The film is authored on the English clock. For Hindi, k() maps an English time to the Hindi one, piecewise-linearly
+ * between anchors: each line's first word and last word end, and every cue the Hindi timing names (the English cue word
+ * -> its Hindi word). Scene cuts and in-between beats move with it; springs keep their real-time speed.
+ * Scene 3's order differs in Hindi ("enquiry ... site visit ... gap"), so its gap/visit cues are not anchors: it has its own beats. */
+const KA = (() => {
+  if (!HI) return null;
+  const A = [[0, 0], [END_EN, END]];
+  TM_EN.forEach((le, i) => {
+    const lh = TM[i], ew = le.words, hw = lh.words;
+    A.push([ew[0].t, hw[0].t], [ew[ew.length - 1].t + ew[ew.length - 1].d, hw[hw.length - 1].t + hw[hw.length - 1].d]);
+    for (const c in lh.cues || {}) {
+      if (le.id === 'p04' && c !== 'Golden') continue;
+      try { A.push([wtIn(TM_EN, le.id, c), lh.cues[c]]); } catch (e) { /* cue word not in this English line */ }
+    }
+  });
+  A.sort((a, b) => a[0] - b[0]);
+  const out = [];
+  for (const p of A) if (!out.length || (p[0] > out[out.length - 1][0] && p[1] > out[out.length - 1][1])) out.push(p);
+  return out;
+})();
+function k(x) {
+  if (!HI) return x;
+  for (let i = 1; i < KA.length; i++) if (x <= KA[i][0]) { const [a0, b0] = KA[i - 1], [a1, b1] = KA[i]; return b0 + (x - a0) / (a1 - a0) * (b1 - b0); }
+  return END;
+}
+// a word's time: English as spoken; Hindi from the named cue, else the same word, else the English time mapped
+const dv = tx => HI && /[\u0900-\u097F]/.test(tx) ? ' dv' : ''; // Devanagari words: no letter-spacing (keeps the headline joined)
+const ALIAS = { with: 'conversation' };
+function wt(id, word, nth = 0) {
+  if (!HI) return wtIn(TM, id, word, nth);
+  const l = TM.find(x => x.id === id), key = ALIAS[word.toLowerCase()] || word;
+  const ck = Object.keys(l.cues || {}).find(c => c.toLowerCase() === key.toLowerCase());
+  if (ck) return l.cues[ck];
+  if (word.toLowerCase() === 'every') return l.words[0].t; // "हर हफ्ते": the line's first word
+  try { return wtIn(TM, id, key, nth); } catch (e) { return k(wtIn(TM_EN, id, word, nth)); }
 }
 
 // ------------------------------------------------------------------ DOM helpers
@@ -116,7 +155,8 @@ function setPush(s, fx, fy, z) { s.push.style.transformOrigin = `${fx}px ${fy}px
 
 // surfaces under the captions (and the cut list they split at)
 const SURF = [[0, 5.2, 'cream'], [5.2, 7.7, 'photo'], [7.7, 11.8, 'dark'], [11.8, 17.2, 'cream'], [17.2, 19.6, 'photo'],
-  [19.6, 39.25, 'cream'], [39.25, 41.6, 'photo'], [41.6, 44.6, 'cream'], [44.6, 46.6, 'photo'], [46.6, END, 'cream']];
+  [19.6, 39.25, 'cream'], [39.25, 41.6, 'photo'], [41.6, 44.6, 'cream'], [44.6, 46.6, 'photo'], [46.6, END_EN, 'cream']]
+  .map(([a, b, n]) => [k(a), b === END_EN ? END : k(b), n]);
 
 // sound cues read by audio/mix.py (peak times)
 const CUES = [];
@@ -168,7 +208,7 @@ const PHOTO = (scn, name, ox, oy, sc) => css(IMG('../gen/photos/' + name + '.jpg
 const PS = 1920 / 1672; // the screen plates cover the frame at 1.148 in both shapes
 
 // ================================================================== 1. hook (0 - 5.2)
-const s1 = scene(0, 5.2);
+const s1 = scene(k(0), k(5.2));
 const PH1 = pick({ w: 500, h: 1040, x: 710, y: 92, s: 1, rows: 232, lift: [960, 600] },
   { w: 500, h: 1040, x: 290, y: 872, s: 1.04, rows: 232, lift: [540, 760] });
 const mph = css(E('div', 'mphone', s1.push), { width: PH1.w, height: PH1.h, left: PH1.x, top: PH1.y, transformOrigin: '50% 0' });
@@ -177,45 +217,53 @@ E('div', 'tabs', mscr, '<span>All</span><span class="on">Missed</span>');
 const mrows = css(E('div', 'abs', mscr), { left: 0, right: 0, top: PH1.rows, bottom: 0, overflow: 'hidden', position: 'absolute' });
 const MISSED = ['6:05 PM', '6:48 PM', '7:20 PM', '7:52 PM', '8:31 PM', '9:04 PM', '9:37 PM', '10:12 PM', '10:40 PM'];
 const RH = 86;
-const ROWT = MISSED.map((_, k) => 0.5 + 0.5 * k);
+const ROWT = MISSED.map((_, i) => k(0.5 + 0.5 * i));
 const mrowEls = MISSED.map((tm, k) => E('div', 'mrow', mrows,
   `${SVG.missed}<div class="mn">${k === 8 ? '+91 98765 43210' : '+91 98…'}<span class="ms">Missed call · Mobile</span></div><div class="mt">${tm}</div>`));
 ROWT.forEach(t => cue(t, 'tick', .8));
 // the question, typed at the word times
 const QW = TM[0].words;
-const QL = pick({ split: [0, 6], y: [470, 582] }, { split: [0, 6, 11], y: [270, 375, 500] });
+// Hindi title: the spoken words, set as written for the screen; the gold serif line starts at "एक"
+const QTXT = HI ? 'पिछले महीने की कितनी enquiries को आपकी team ने एक घंटे के अंदर call back किया?'.split(' ') : null;
+const QSER = HI ? 9 : 11;
+const QL = HI ? pick({ split: [0, 9], y: [470, 590] }, { split: [0, 4, 9], y: [250, 360, 490] })
+  : pick({ split: [0, 6], y: [470, 582] }, { split: [0, 6, 11], y: [270, 375, 500] });
+// Hindi 16:9: a soft cream band behind the title lines, so the faint missed-call rows never cross the letters (in 9:16 the phone sits below)
+const qfade = HI && !V ? css(E('div', 'qfade', s1.push), { top: QL.y[0] - 110, height: QL.y[1] - QL.y[0] + 240 }) : null;
 const qlines = QL.y.map(y => css(E('div', 'q', s1.push), { top: y - 50 }));
 const qws = QW.map((w, i) => {
   let li = 0; QL.split.forEach((s, k) => { if (i >= s) li = k; });
-  return Object.assign(E('span', 'w' + (i >= 11 ? ' serif gold' : ''), qlines[li], w.w), { t: w.t });
+  const tx = HI ? QTXT[i] : w.w;
+  return Object.assign(E('span', 'w' + (i >= QSER ? ' serif gold' : '') + dv(tx), qlines[li], tx), { t: w.t });
 });
 s1.render = t => {
   push(s1, t, W / 2, H / 2);
-  mph.style.opacity = V ? 1 : lerp(.16, 1, ss(t, 4.45, 4.85)); // 9:16: the phone sits below the question, never behind it
-  mph.style.transform = `translateY(${lerp(18, 0, sp(t, 4.4, 9))}px) scale(${PH1.s})`;
-  MISSED.forEach((_, k) => {
-    let y = 0; for (let j = k + 1; j < MISSED.length; j++) y += sp(t, ROWT[j], 16) * RH;
-    y -= (1 - sp(t, ROWT[k], 16)) * RH * .7;
-    mrowEls[k].style.transform = `translateY(${y}px)`;
-    mrowEls[k].style.opacity = ss(t, ROWT[k] - .02, ROWT[k] + .12) * (k === 8 ? 1 - ss(t, 4.62, 4.72) : 1);
+  mph.style.opacity = V ? 1 : lerp(.16, 1, ss(t, k(4.45), k(4.85))); // 9:16: the phone sits below the question, never behind it
+  mph.style.transform = `translateY(${lerp(18, 0, sp(t, k(4.4), 9))}px) scale(${PH1.s})`;
+  MISSED.forEach((_, m) => {
+    let y = 0; for (let j = m + 1; j < MISSED.length; j++) y += sp(t, ROWT[j], 16) * RH;
+    y -= (1 - sp(t, ROWT[m], 16)) * RH * .7;
+    mrowEls[m].style.transform = `translateY(${y}px)`;
+    mrowEls[m].style.opacity = ss(t, ROWT[m] - .02, ROWT[m] + .12) * (m === 8 ? 1 - ss(t, k(4.62), k(4.72)) : 1);
   });
+  if (qfade) qfade.style.opacity = ss(t, QW[0].t - .2, QW[0].t + .1) * (1 - ss(t, k(4.48), k(4.9)));
   qws.forEach((w, i) => {
-    const ex = ss(t, 4.48 + i * .012, 4.78 + i * .012);
+    const ex = ss(t, k(4.48) + i * .012, k(4.78) + i * .012);
     w.style.opacity = ss(t, w.t - .02, w.t + .1) * (1 - ex);
     w.style.transform = `translateY(${(1 - sp(t, w.t, 20)) * 18 - ex * 36}px)`;
   });
   // Karan's row lifts off and becomes the lead object
-  if (t >= 4.62) {
-    const p = sp(t, 4.62, 8.5);
+  if (t >= k(4.62)) {
+    const p = sp(t, k(4.62), 8.5);
     const rx = PH1.x + PH1.w / 2, ry = PH1.y + (14 + PH1.rows + RH / 2) * PH1.s;
     const rw = (PH1.w - 28) * PH1.s, rh = RH * PH1.s;
     card({ parent: s1.push, x: rx, y: lerp(ry, PH1.lift[1], p), w: lerp(rw / CS, CW, p), h: lerp(rh / CS, CH, p),
-      radius: lerp(0, 22, p), border: `rgba(169,128,63,${p})`, shadow: p, face: ss(t, 4.62, 4.78) });
+      radius: lerp(0, 22, p), border: `rgba(169,128,63,${p})`, shadow: p, face: ss(t, k(4.62), k(4.78)) });
   }
 };
 
 // ================================================================== 2. problem (5.2 - 11.8)
-const s2a = scene(5.2, 7.7);
+const s2a = scene(k(5.2), k(7.7));
 const P2 = pick({ ox: 0, oy: -100, s: 1.25, ph: [1100, 500] }, { ox: -100, oy: 0, s: 1.25, ph: [690, 930] });
 PHOTO(s2a, pick('02-buyer-sofa', '02b-buyer-sofa-tall'), P2.ox, P2.oy, P2.s);
 // the clock sits top-left over both halves of the scene
@@ -227,7 +275,7 @@ const mkLine = s => { const l = E('div', 'ln', digits); return [...s].map(ch => 
 const CLA = mkLine('10:40 PM'), CLB = mkLine('8:12 AM');
 const T1040 = wt('p02', '10:40'), TMORN = wt('p03', 'morning');
 function clock(t) {
-  const on = t >= T1040 - .05 && t < 11.8;
+  const on = t >= T1040 - .05 && t < k(11.8);
   OV.style.display = on ? 'block' : 'none'; if (!on) return;
   clockEl.style.opacity = ss(t, T1040 - .05, T1040 + .12);
   CLA.forEach((c, i) => {
@@ -241,11 +289,11 @@ function clock(t) {
 }
 s2a.render = t => {
   push(s2a, t, P2.ph[0], P2.ph[1]);
-  const p = sp(t, 5.2, 6.5);
+  const p = sp(t, k(5.2), 6.5);
   card({ parent: s2a.push, x: lerp(PH1.lift[0], P2.ph[0], p), y: lerp(PH1.lift[1], P2.ph[1] - 10, p), s: lerp(CS, .07, p),
-    o: 1 - ss(t, 5.62, 5.82), sub: 'missed' });
+    o: 1 - ss(t, k(5.62), k(5.82)), sub: 'missed' });
 };
-const s2b = scene(7.7, 11.8);
+const s2b = scene(k(7.7), k(11.8));
 s2b.root.style.background = '#1A1712';
 const comps = ['Called back · 7:55 AM', 'WhatsApp reply · 8:03 AM', 'Visit offered · 8:10 AM'].map((sb, i) =>
   E('div', 'comp', s2b.push, `<div class="av">B${i + 1}</div><div><div class="nm">Another builder</div><div class="sb">${sb}</div></div>`));
@@ -259,13 +307,13 @@ s2b.render = t => {
     const p = sp(t, T3 + i * .15, 8), [fx, fy] = C2.from;
     put(c, fx ? lerp(fx, C2.cmp[i][0], p) : C2.cmp[i][0], fy ? lerp(fy, C2.cmp[i][1], p) : C2.cmp[i][1], C2.s, ss(t, T3 + i * .15, T3 + i * .15 + .1));
   });
-  const a = sp(t, 7.7, 9), b = sp(t, T3 + .1, 5.5);
+  const a = sp(t, k(7.7), 9), b = sp(t, T3 + .1, 5.5);
   card({ parent: s2b.push, x: lerp(lerp(P2.ph[0], C2.c[0], a), C2.k[0], b), y: lerp(lerp(P2.ph[1] - 10, C2.c[1], a), C2.k[1], b),
     s: lerp(.07, C2.s, a), sub: 'noreply', shadow: 0 });
 };
 
 // ================================================================== 3. promise (11.8 - 17.2)
-const s3 = scene(11.8, 17.2);
+const s3 = scene(k(11.8), k(17.2));
 // 16:9: chips left and right on one line; 9:16: the thread runs down the frame
 const L3 = pick({ logo: [960, 250, 820], a: [400, 730], b: [1520, 730], wait: [400, 560], mid: [960, 730], cs: 1 },
   CAP === '1' ? { logo: [540, 330, 860], a: [540, 820], b: [540, 1480], wait: [540, 630], mid: [540, 1150], cs: 1.3 } // clear of the caption strip
@@ -281,19 +329,21 @@ thread.setAttribute('fill', 'none'); thread.setAttribute('stroke', '#A9803F'); t
 thread.setAttribute('stroke-linecap', 'round'); svg3.appendChild(thread);
 const chipA = E('div', 'chip', s3.push, '<i></i>Enquiry'), chipB = E('div', 'chip', s3.push, '<i></i>Site visit');
 const TGR = wt('p04', 'golden'), TGAP = wt('p04', 'gap'), TENQ = wt('p04', 'enquiry'), TSITE = wt('p04', 'site'), TVIS = wt('p04', 'visit');
-cue(TGR, 'impact', .6); cue(TVIS + .02, 'thump', .7);
+const B3 = HI ? { a: TENQ, b: TSITE, draw: TSITE + .15, tight: TGAP, snap: TGAP + .29 } // "बंद" closes
+  : { a: TGAP, b: TGAP + .12, draw: TGAP + .15, tight: TSITE + .1, snap: TVIS };
+cue(TGR, 'impact', .6); cue(B3.snap + .02, 'thump', .7);
 const BT = pick([1027 * PS, 677 * PS, 285 * PS / 520], [543 * PS, 1032 * PS, 268 * PS / 520]); // the WhatsApp button under the thumb
 s3.render = t => {
   push(s3, t, W / 2, H / 2);
   const lp = sp(t, TGR, 4.2);
   logoBox.style.clipPath = `inset(-5% ${(1 - lp) * 100}% -5% 0)`;
   logoBox.style.opacity = ss(t, TGR - .05, TGR + .2);
-  const ca = sp(t, TGAP, 11), cb = sp(t, TGAP + .12, 11);
-  put(chipA, L3.a[0], L3.a[1], L3.cs * lerp(.9, 1, ca), ss(t, TGAP, TGAP + .15));
-  put(chipB, L3.b[0], L3.b[1], L3.cs * lerp(.9, 1, cb), ss(t, TGAP + .12, TGAP + .27));
+  const ca = sp(t, B3.a, 11), cb = sp(t, B3.b, 11);
+  put(chipA, L3.a[0], L3.a[1], L3.cs * lerp(.9, 1, ca), ss(t, B3.a, B3.a + .15));
+  put(chipB, L3.b[0], L3.b[1], L3.cs * lerp(.9, 1, cb), ss(t, B3.b, B3.b + .15));
   chipA.firstChild.style.background = mixc('#D8D1C5', '#A9803F', ss(t, TENQ, TENQ + .15));
   chipB.firstChild.style.background = mixc('#D8D1C5', '#A9803F', ss(t, TSITE, TSITE + .15));
-  const tight = sp(t, TSITE + .1, 11);
+  const tight = sp(t, B3.tight, 11);
   let d;
   if (!V) {
     const x0 = L3.a[0] + chipA.offsetWidth / 2, x1 = L3.b[0] - chipB.offsetWidth / 2, sag = 150 * (1 - tight);
@@ -303,10 +353,10 @@ s3.render = t => {
     d = `M${L3.a[0]} ${y0} Q${L3.a[0] + 2 * sag} ${(y0 + y1) / 2} ${L3.a[0]} ${y1}`;
   }
   thread.setAttribute('d', d);
-  const len = thread.getTotalLength(), draw = sp(t, TGAP + .15, 6);
+  const len = thread.getTotalLength(), draw = sp(t, B3.draw, 6);
   thread.style.strokeDasharray = `${len} ${len}`; thread.style.strokeDashoffset = (1 - draw) * len;
   // Karan's card: from where scene 2 left it to beside the Enquiry chip, then onto the middle of the thread
-  const a = sp(t, 11.8, 7), b = sp(t, TVIS, 13), m = sp(t, 16.78, 13);
+  const a = sp(t, k(11.8), 7), b = sp(t, B3.snap, 13), m = sp(t, k(16.78), 13);
   const ax = lerp(C2.k[0], L3.wait[0], a), ay = lerp(C2.k[1], L3.wait[1], a);
   card({ parent: s3.push, x: lerp(lerp(ax, L3.mid[0], b), BT[0], m), y: lerp(lerp(ay, L3.mid[1], b), BT[1], m),
     s: lerp(lerp(C2.s, CS, a), BT[2], m), w: lerp(CW, 520, m), h: lerp(CH, 96, m), radius: lerp(22, 48, m),
@@ -315,19 +365,19 @@ s3.render = t => {
 };
 
 // ================================================================== 4. WhatsApp AI (17.2 - 27.6)
-const s4a = scene(17.2, 19.6);
+const s4a = scene(k(17.2), k(19.6));
 const P4 = pick({ ox: 0, oy: 0, s: PS, f: [1030 * PS, 470 * PS] }, { ox: 0, oy: 0, s: PS, f: [545 * PS, 815 * PS] });
 PHOTO(s4a, pick('03c-thumb-tap-screen', '03d-thumb-tap-screen-tall'), P4.ox, P4.oy, P4.s);
 const ring4 = css(E('div', 'abs', s4a.push), { width: 60, height: 60, borderRadius: '50%', border: '3px solid rgba(255,255,255,.9)' });
 s4a.render = t => {
-  if (t < 19.0) push(s4a, t, P4.f[0], P4.f[1], 1, 1.04, 17.2, 19.0);
-  else setPush(s4a, P4.f[0], P4.f[1], lerp(1.04, 2.4, ein(clamp((t - 19.0) / .6))));
-  const rp = clamp((t - 17.42) / .45);
+  if (t < k(19.0)) push(s4a, t, P4.f[0], P4.f[1], 1, 1.04, k(17.2), k(19.0));
+  else setPush(s4a, P4.f[0], P4.f[1], lerp(1.04, 2.4, ein(clamp((t - k(19.0)) / (k(19.6) - k(19.0))))));
+  const rp = clamp((t - k(17.42)) / .45);
   put(ring4, BT[0], BT[1], lerp(.3, 1.6, eio(rp)), rp > 0 && rp < 1 ? (1 - rp) * .9 : 0);
 };
-cue(17.42, 'pop', .6);
+cue(k(17.42), 'pop', .6);
 
-const s4b = scene(19.6, 27.6);
+const s4b = scene(k(19.6), k(27.6));
 // 16:9: the phone on cream at 0.56 (bubble text 29 px); 9:16: the screen fills the frame at 0.692 (36 px)
 const WZ = pick(.56, 1080 / 1560), WTOP = pick(40, 0), BEZ = pick(26, 0);
 const WBOT = CAP === '1' ? pick(150, 300) : WTOP; // with captions the phone stops above the caption strip
@@ -340,9 +390,9 @@ LI('wa_foot', wascr).style.top = (WSH - 200) + 'px';
 const col = E('div', 'col', chat);
 const CHATH = WSH - 376 - 200;
 const BUB = [
-  ['wa_today', 19.66], ['wa_k1', 19.74], ['wa_ai1', wt('p05', 'night') - .1], ['wa_opts', wt('p06', 'prices')],
+  ['wa_today', k(19.66)], ['wa_k1', k(19.74)], ['wa_ai1', wt('p05', 'night') - .1], ['wa_opts', wt('p06', 'prices')],
   ['wa_pdf', wt('p06', 'brochure')], ['wa_aiq', wt('p06', 'answers')], ['wa_k2', wt('p06', 'hinglish')],
-  ['wa_aislot', 25.48], ['wa_slots', 25.6], ['wa_ksun', 25.82], ['wa_done', wt('p06', 'books')],
+  ['wa_aislot', k(25.48)], ['wa_slots', k(25.6)], ['wa_ksun', k(25.82)], ['wa_done', wt('p06', 'books')],
 ].map(([n, t]) => { const e = LI(n, col); return { e, t, y: e.m.y - 376, h: e.m.h, right: e.m.x > 400, n }; });
 // the film's order: options, brochure, the AI's question, his Hinglish reply, slots, booked
 (() => {
@@ -361,7 +411,7 @@ function chatScroll(t) {
   return s;
 }
 const WX = W / 2 - (1560 + 2 * BEZ) * WZ / 2;
-const waPhoneZ = t => lerp(1, 1.04, eio(clamp((t - 19.6) / 8)));
+const waPhoneZ = t => lerp(1, 1.04, eio(clamp((t - k(19.6)) / (k(27.6) - k(19.6)))));
 // screen rect of the "booked" bubble (the hand-off into the CRM starts from it)
 function doneRect(t) {
   const b = BUB[BUB.length - 1], z = waPhoneZ(t), sc = chatScroll(t);
@@ -373,14 +423,14 @@ s4b.render = t => {
   waph.style.transform = `translate(${WX}px,${WTOP}px) scale(${WZ})`;
   col.style.transform = `translateY(${-chatScroll(t)}px)`;
   BUB.forEach(b => {
-    const p = sp(t, b.t, 16), lift = b.n === 'wa_done' ? ss(t, 27.1, 27.6) : 0;
+    const p = sp(t, b.t, 16), lift = b.n === 'wa_done' ? ss(t, k(27.1), k(27.6)) : 0;
     lt(b.e, 0, (1 - p) * 40 - lift * 20, lerp(.94, 1, p) * (1 + lift * .05), ss(t, b.t - .02, b.t + .08), b.right ? '100% 100%' : '0% 100%');
   });
 };
 
 // ================================================================== 5. CRM (27.6 - 39.25)
 // 5a admin leads list: five rows, Karan's in the middle, about 1.5x the first cut
-const s5a = scene(27.6, 34.2);
+const s5a = scene(k(27.6), k(34.2));
 const s5abg = E('div', 'crmbg', s5a.push);
 const T2 = pick({ cols: [[612, 1150], [1900, 2280], [2530, 2975]], xs: [36, 616, 1036], width: 1511, z: 1.15 },
   { cols: [[612, 1040], [2530, 2975]], xs: [30, 488], width: 963, z: 1.08 });
@@ -437,70 +487,70 @@ if (!V) {
 }
 const xfer = IMG(LSRC('wa_done'), s5a.push); xfer.style.width = LAY.wa_done.w + 'px';
 const TLANDS = wt('p07', 'lands'), TCONV = wt('p07', 'with'), TONE = wt('p08', 'one');
-cue(TLANDS, 'thump', .8); cue(TONE + .02, 'click', 1); cue(32.45, 'click', .45);
+cue(TLANDS, 'thump', .8); cue(TONE + .02, 'click', 1); cue(k(32.45), 'click', .45);
 const t2s = (cx, cy) => [T2X + cx * T2.z, T2Y + cy * T2.z]; // compact table -> screen
 s5a.render = t => {
   push(s5a, t, W / 2, H / 2);
   // the list rises in behind the card
-  const rise = (1 - sp(t, 27.85, 8)) * H * 1.05;
+  const rise = (1 - sp(t, k(27.85), 8)) * H * 1.05;
   s5abg.style.transform = `translateY(${rise}px)`;
-  const open = sp(t, 30.95, 14);
+  const open = sp(t, k(30.95), 14);
   if (!V) {
     tl(tab2.root, T2X, T2Y + rise, T2.z, 1);
     tab2.rows.forEach((r, i) => {
       if (i < 2) lt(r, 0, 0, 1, 1);
-      else if (i === 2) lt(r, 0, 0, 1, ss(t, 31.28, 31.4) * (1 - ss(t, 33.06, 33.1)));
+      else if (i === 2) lt(r, 0, 0, 1, ss(t, k(31.28), k(31.4)) * (1 - ss(t, k(33.06), k(33.1))));
       else lt(r, 0, -130 * (1 - open), 1, 1);
     });
-    hlrow.style.opacity = k2b.style.opacity = ss(t, 33.06, 33.1) * (1 - ss(t, 33.62, 33.72));
-    DD.style.opacity = ss(t, 32.45, 32.5) * (1 - ss(t, 33.06, 33.1));
-    tint2.style.opacity = ss(t, 31.28, 31.4) * (1 - ss(t, 31.6, 32.4)) * .9;
+    hlrow.style.opacity = k2b.style.opacity = ss(t, k(33.06), k(33.1)) * (1 - ss(t, k(33.62), k(33.72)));
+    DD.style.opacity = ss(t, k(32.45), k(32.5)) * (1 - ss(t, k(33.06), k(33.1)));
+    tint2.style.opacity = ss(t, k(31.28), k(31.4)) * (1 - ss(t, k(31.6), k(32.4))) * .9;
   } else {
     tl(stTitle, ST.x, ST.top - 150 + rise, ST.s, 1);
-    stack.forEach((c, k) => {
-      let y = stY(k) + rise, o = 1;
-      if (k === 1) o = ss(t, 31.28, 31.4) * (1 - ss(t, 33.62, 33.72));
-      if (k === 2) y -= (ST.h + ST.gap) * (1 - open);
+    stack.forEach((c, m) => {
+      let y = stY(m) + rise, o = 1;
+      if (m === 1) o = ss(t, k(31.28), k(31.4)) * (1 - ss(t, k(33.62), k(33.72)));
+      if (m === 2) y -= (ST.h + ST.gap) * (1 - open);
       c.c.style.transform = `translateY(${y}px)`; c.c.style.opacity = o;
     });
-    const K = stack[1], hi = ss(t, 33.06, 33.1), fl = ss(t, 31.28, 31.4) * (1 - ss(t, 31.6, 32.4));
+    const K = stack[1], hi = ss(t, k(33.06), k(33.1)), fl = ss(t, k(31.28), k(31.4)) * (1 - ss(t, k(31.6), k(32.4)));
     K.c.style.background = mixc('#FFFFFF', '#FBF3E4', Math.max(hi, fl * .9));
     K.c.style.border = hi > 0 ? `3px solid rgba(169,128,63,${hi})` : '2px solid #ECEAE7';
-    K.dd.firstChild.textContent = t >= 32.45 ? 'Rohan Kulkarni' : 'Choose\u2026';
+    K.dd.firstChild.textContent = t >= k(32.45) ? 'Rohan Kulkarni' : 'Choose\u2026';
   }
   // Karan's slot, his dropdown and his Move button, in screen px
   const KS = V ? [ST.x + ST.w / 2, stY(1) + ST.h / 2] : t2s(...tab2.at(0, 2, 880, 1535));
   const DDP = V ? [ST.x + 36 + 300, stY(1) + 366] : t2s(...tab2.at(T2.cols.length - 1, 2, 2671, 1533));
   const MVP = V ? [ST.x + 660 + (ST.w - 696) / 2, stY(1) + 366] : t2s(...tab2.at(T2.cols.length - 1, 2, 2882, 1534));
   // booked bubble -> new-lead card
-  const r = doneRect(27.6), bp = sp(t, 27.6, 10);
-  put(xfer, lerp(r.x, W / 2, bp), lerp(r.y, pick(500, 900), bp), lerp(r.w / LAY.wa_done.w, .2, bp), 1 - ss(t, 27.72, 27.86));
-  const gp = sp(t, 27.68, 9), land = sp(t, TLANDS, 18), fold = sp(t, 30.95, 9);
+  const r = doneRect(k(27.6)), bp = sp(t, k(27.6), 10);
+  put(xfer, lerp(r.x, W / 2, bp), lerp(r.y, pick(500, 900), bp), lerp(r.w / LAY.wa_done.w, .2, bp), 1 - ss(t, k(27.72), k(27.86)));
+  const gp = sp(t, k(27.68), 9), land = sp(t, TLANDS, 18), fold = sp(t, k(30.95), 9);
   const cy = pick(500, 820);
   put(leadImg, lerp(W / 2, KS[0], fold), lerp(lerp(cy - 40, cy, land), KS[1], fold),
-    lerp(lerp(.12, LEADS * 1.02, gp) * lerp(1, .98, land), .1, fold), ss(t, 27.68, 27.8) * (1 - ss(t, 31.2, 31.35)));
+    lerp(lerp(.12, LEADS * 1.02, gp) * lerp(1, .98, land), .1, fold), ss(t, k(27.68), k(27.8)) * (1 - ss(t, k(31.2), k(31.35))));
   const sb = sp(t, TCONV, 5);
   sumBox.style.clipPath = `inset(-10px ${(1 - sb) * 100}% -10px -10px)`;
   sumBox.style.opacity = ss(t, TCONV, TCONV + .1);
   // the manager's one click
   const dd = DDP, mv = MVP;
   const c0 = [pick(1500, 760), pick(960, 1500)];
-  const a1 = sp(t, 31.85, 7), a2 = sp(t, 32.62, 9);
+  const a1 = sp(t, k(31.85), 7), a2 = sp(t, k(32.62), 9);
   const cx = lerp(lerp(c0[0], dd[0], a1), mv[0], a2), cyy = lerp(lerp(c0[1], dd[1], a1), mv[1], a2);
-  const press = Math.max(1 - Math.abs(t - 32.44) / .07, 1 - Math.abs(t - (TONE + .02)) / .07, 0);
+  const press = Math.max(1 - Math.abs(t - k(32.44)) / .07, 1 - Math.abs(t - (TONE + .02)) / .07, 0);
   cursor.style.transformOrigin = '3px 3px';
   cursor.style.transform = `translate(${cx - 3}px,${cyy - 3}px) scale(${1 - .12 * clamp(press)})`;
-  cursor.style.opacity = ss(t, 31.8, 31.95) * (1 - ss(t, 33.7, 33.85));
+  cursor.style.opacity = ss(t, k(31.8), k(31.95)) * (1 - ss(t, k(33.7), k(33.85)));
   // Karan's row leaves as the card, for Rohan
-  if (t >= 33.6) {
-    const p = ein(clamp((t - 33.7) / .5));
+  if (t >= k(33.6)) {
+    const p = ein(clamp((t - k(33.7)) / .5));
     const rs = V ? KS : t2s(...tab2.at(0, 2, 900, 1535));
-    card({ parent: s5a.push, x: lerp(Math.max(rs[0], CW * CS / 2 + 30), W + 500, p), y: rs[1], s: CS * lerp(.9, 1, ss(t, 33.6, 33.75)),
-      o: ss(t, 33.6, 33.7), sub: 'rohan', tag: 'rohan' });
+    card({ parent: s5a.push, x: lerp(Math.max(rs[0], CW * CS / 2 + 30), W + 500, p), y: rs[1], s: CS * lerp(.9, 1, ss(t, k(33.6), k(33.75))),
+      o: ss(t, k(33.6), k(33.7)), sub: 'rohan', tag: 'rohan' });
   }
 };
 // 5b Rohan's leads
-const s5b = scene(34.2, 36.9);
+const s5b = scene(k(34.2), k(36.9));
 E('div', 'crmbg', s5b.push);
 const T6 = pick({ cols: [[612, 990], [1500, 1760], [2250, 2500], [3130, 3430], [3600, 3740]], xs: [36, 456, 756, 1046, 1366], width: 1530, z: 1.05, title: [100, 40], top: 200 },
   { cols: [[612, 990], [3130, 3430], [3600, 3740]], xs: [30, 438, 758], width: 920, z: 1.15, title: [60, 330], top: 560 });
@@ -512,22 +562,22 @@ const T6X = (W - T6.width * T6.z) / 2;
 const t6s = (cx, cy) => [T6X + cx * T6.z, T6.top + cy * T6.z];
 s5b.render = t => {
   push(s5b, t, W / 2, H / 2);
-  tl(title6, T6.title[0], T6.title[1], T6.z * 1.1, ss(t, 34.2, 34.3));
+  tl(title6, T6.title[0], T6.title[1], T6.z * 1.1, ss(t, k(34.2), k(34.3)));
   tl(tab6.root, T6X, T6.top, T6.z, 1);
   tab6.rows.forEach((r, i) => {
-    if (i === 0) { lt(r, 0, 0, 1, ss(t, 34.6, 34.68) * (1 - ss(t, 36.5, 36.56))); return; }
-    const ti = 34.25 + i * .06, p = sp(t, ti, 13);
+    if (i === 0) { lt(r, 0, 0, 1, ss(t, k(34.6), k(34.68)) * (1 - ss(t, k(36.5), k(36.56)))); return; }
+    const ti = k(34.25) + i * .06, p = sp(t, ti, 13);
     lt(r, 0, (1 - p) * 60, 1, ss(t, ti, ti + .12));
   });
-  tint6.style.opacity = ss(t, 34.6, 34.68) * (1 - ss(t, 35.0, 35.9)) * .9;
+  tint6.style.opacity = ss(t, k(34.6), k(34.68)) * (1 - ss(t, k(35.0), k(35.9))) * .9;
   const r0 = t6s(...tab6.at(0, 0, 900, 385));
   const tx = Math.max(r0[0], CW * CS / 2 + 30);
-  const inn = sp(t, 34.2, 10), out = ein(clamp((t - 36.5) / .4));
+  const inn = sp(t, k(34.2), 10), out = ein(clamp((t - k(36.5)) / .4));
   card({ parent: s5b.push, x: lerp(lerp(-400, tx, inn), W + 500, out), y: r0[1],
-    o: t < 34.62 || t >= 36.5 ? 1 : 0, sub: t < 36.5 ? 'rohan' : 'follow', tag: t < 36.5 ? 'rohan' : 'today' });
+    o: t < k(34.62) || t >= k(36.5) ? 1 : 0, sub: t < k(36.5) ? 'rohan' : 'follow', tag: t < k(36.5) ? 'rohan' : 'today' });
 };
 // 5c his follow-ups (and the card leaves to make the call)
-const s5c = scene(36.9, 39.25);
+const s5c = scene(k(36.9), k(39.25));
 E('div', 'crmbg', s5c.push);
 const T5 = pick({ cols: [[612, 1150], [1520, 1950], [2540, 3000]], xs: [36, 616, 1086], width: 1576, z: 1.1, title: [110, 120], top: 340 },
   { cols: [[612, 992], [2540, 3000]], xs: [30, 440], width: 930, z: 1.15, title: [40, 520], top: 760 });
@@ -551,24 +601,24 @@ s5c.render = t => {
   tl(ptitle5, T5X + 6 * T5.z, T5.top + 4, T5.z, 1);
   tl(tab5.root, T5X, T5.top + 130 * T5.z, T5.z, 1);
   tab5.rows.forEach((v, i) => {
-    const ti = i < 2 ? 36.95 + i * .08 : TTODAY + .08;
-    lt(v, 0, (1 - sp(t, ti, 14)) * 40, 1, ss(t, ti, ti + .1) * (i === 2 ? 1 - ss(t, 38.82, 38.9) : 1));
+    const ti = i < 2 ? k(36.95) + i * .08 : TTODAY + .08;
+    lt(v, 0, (1 - sp(t, ti, 14)) * 40, 1, ss(t, ti, ti + .1) * (i === 2 ? 1 - ss(t, k(38.82), k(38.9)) : 1));
   });
   tint5.style.opacity = ss(t, TTODAY + .08, TTODAY + .2) * (1 - ss(t, TTODAY + .4, TTODAY + 1.3)) * .9;
   const vs = t5s(...tab5.at(0, 2, 880, 1158));
   const vx = Math.max(vs[0], CW * CS / 2 + 30);
-  const a = sp(t, 36.9, 10), m = sp(t, 38.82, 9), dark = ss(m, .05, .45);
+  const a = sp(t, k(36.9), 10), m = sp(t, k(38.82), 9), dark = ss(m, .05, .45);
   card({ parent: s5c.push, x: lerp(lerp(W + 400, vx, a), P6.x, m), y: lerp(vs[1], P6.y, m), r: lerp(0, P6.r, m),
     s: lerp(CS, 1, m), w: lerp(CW, P6.w, m), h: lerp(CH, P6.h, m), radius: lerp(22, 16, m), bg: mixc('#FFFFFF', '#141210', dark),
     border: `rgba(169,128,63,${1 - dark})`, face: 1 - ss(m, 0, .25), ring: ss(m, .2, .5),
-    o: t < TTODAY + .1 || t >= 38.82 ? 1 : 0, sub: t < 38.82 ? 'follow' : 'calling', tag: 'today' });
+    o: t < TTODAY + .1 || t >= k(38.82) ? 1 : 0, sub: t < k(38.82) ? 'follow' : 'calling', tag: 'today' });
 };
 
 // ================================================================== 6. AI calling (39.25 - 44.6)
-const s6a = scene(39.25, 41.6);
+const s6a = scene(k(39.25), k(41.6));
 PHOTO(s6a, pick('07c-morning-call-screen', '07d-morning-call-screen-tall'), P6.ox, P6.oy, P6.s);
 const rings6 = [0, 1].map(() => css(E('div', 'abs', s6a.push), { width: 90, height: 90, borderRadius: '50%', border: '3px solid rgba(225,195,135,.95)' }));
-const RINGT = [39.5, 40.4];
+const RINGT = [39.5, 40.4].map(k);
 RINGT.forEach(t => cue(t, 'ring', .8));
 s6a.render = t => {
   push(s6a, t, P6.x, P6.y);
@@ -578,14 +628,14 @@ s6a.render = t => {
     r.style.opacity = p > 0 && p < 1 ? (1 - p) * .9 : 0;
   });
 };
-const s6b = scene(41.6, 44.6);
+const s6b = scene(k(41.6), k(44.6));
 // 16:9: real call layers at 0.64 (28 px); 9:16: the transcript set as HTML at 36 px
 const L6 = pick({ card: [470, 236], call: [470, 600], cz: .45, panel: [880, 110, 927], tz: .64 },
   CAP === '1' ? { card: [540, 170], call: [540, 505], cz: .45, panel: [40, 760, 1000], tz: 0 } // clear of the caption strip
     : { card: [540, 205], call: [540, 560], cz: .45, panel: [40, 830, 1000], tz: 0 });
 const callc = css(E('div', 'callcard', s6b.push), { width: 1560 * L6.cz, height: 1040 * L6.cz });
 IMG(LSRC('call_top'), callc).style.width = '100%';
-const TRT = [41.68, 41.86, 42.42, 42.92, 43.36];
+const TRT = [41.68, 41.86, 42.42, 42.92, 43.36].map(k);
 let panel, trs, conf, PANH, CONFH;
 if (!V) {
   const TRH = [136, 312, 149, 240, 159];
@@ -608,31 +658,31 @@ const TCONF = wt('p10', 'confirm');
 cue(TCONF + .05, 'chime', .55);
 s6b.render = t => {
   push(s6b, t, W / 2, H / 2);
-  put(callc, L6.call[0], L6.call[1] + (1 - sp(t, 41.6, 10)) * 40, 1, ss(t, 41.6, 41.7));
+  put(callc, L6.call[0], L6.call[1] + (1 - sp(t, k(41.6), 10)) * 40, 1, ss(t, k(41.6), k(41.7)));
   trs.forEach((e, i) => {
     const p = sp(t, TRT[i], 14);
     e.style.transform = `translate(0px,${e.y0 + (1 - p) * 30}px)`; e.style.opacity = ss(t, TRT[i], TRT[i] + .1);
   });
-  panel.style.opacity = ss(t, 41.62, 41.72);
-  panel.style.transform = `translateY(${(1 - sp(t, 41.62, 10)) * 30}px)`;
+  panel.style.opacity = ss(t, k(41.62), k(41.72));
+  panel.style.transform = `translateY(${(1 - sp(t, k(41.62), 10)) * 30}px)`;
   const ph = V ? panel.offsetHeight : PANH, ch = V ? conf.offsetHeight : CONFH;
   const cp = sp(t, TCONF, 12);
   put(conf, L6.panel[0] + L6.panel[2] / 2, L6.panel[1] + ph + 22 + ch / 2 + (1 - cp) * 30, 1, ss(t, TCONF, TCONF + .1));
-  card({ parent: s6b.push, x: L6.card[0], y: L6.card[1] + (1 - sp(t, 41.6, 9)) * 30, o: ss(t, 41.6, 41.72), sub: t < TCONF ? 'today' : 'confirmed', tag: 'today' });
+  card({ parent: s6b.push, x: L6.card[0], y: L6.card[1] + (1 - sp(t, k(41.6), 9)) * 30, o: ss(t, k(41.6), k(41.72)), sub: t < TCONF ? 'today' : 'confirmed', tag: 'today' });
   const tp = sp(t, TCONF + .05, 14);
   s6b.push.appendChild(tick); // above the card
   put(tick, L6.card[0] + (CW / 2 - 8) * CS, L6.card[1] - (CH / 2 - 8) * CS, CS * lerp(1.6, 1, tp), ss(t, TCONF + .05, TCONF + .15));
 };
 
 // ================================================================== 7. analytics + AI tips (44.6 - 53.4)
-const s7a = scene(44.6, 46.6);
+const s7a = scene(k(44.6), k(46.6));
 const P7 = pick({ ox: 0, oy: 0, s: PS, f: [1230 * PS, 450 * PS], z0: 1.22, z1: 2.3 }, { ox: 0, oy: 0, s: PS, f: [625 * PS, 450 * PS], z0: 1.2, z1: 1.9 });
 PHOTO(s7a, pick('10c-owner-analytics-screen', '10d-owner-analytics-screen-tall'), P7.ox, P7.oy, P7.s);
 s7a.render = t => {
-  const back = lerp(P7.z0, 1.0, sp(Math.min(t, 45.95), 44.6, 4.5));
-  setPush(s7a, P7.f[0], P7.f[1], t < 45.95 ? back : lerp(back, P7.z1, ein(clamp((t - 45.95) / .65))));
+  const back = lerp(P7.z0, 1.0, sp(Math.min(t, k(45.95)), k(44.6), 4.5));
+  setPush(s7a, P7.f[0], P7.f[1], t < k(45.95) ? back : lerp(back, P7.z1, ein(clamp((t - k(45.95)) / (k(46.6) - k(45.95))))));
 };
-const s7b = scene(46.6, 53.4);
+const s7b = scene(k(46.6), k(53.4));
 E('div', 'crmbg', s7b.push);
 // the overview, re-set from its real parts: title, four KPI tiles (numbers roll old -> new), bookings by channel
 const L7 = pick({ title: [110, 52, 1.0], tiles: { x: 110, y: 190, w: 400, h: 200, gap: 33, cols: 4, nz: 1.0, lz: 1.08 },
@@ -708,17 +758,17 @@ s7b.render = t => {
     k.n.style.transform = `translateY(${(1 - p) * k.h}px)`; k.n.style.opacity = ss(p, 0, .5);
   });
   chRows.forEach((r, i) => {
-    const w = TW * r.n0 / 4 * sp(t, 46.75 + i * .1, 9);
+    const w = TW * r.n0 / 4 * sp(t, k(46.75) + i * .1, 9);
     r.bar.style.width = w + 'px';
     const n = i === 0 && t >= TBOOK ? r.n1 : r.n0, wend = i === 0 && t >= TBOOK ? TW : w;
     r.n.textContent = String(n);
     r.n.style.left = (wend + 18) + 'px';
-    r.n.style.opacity = ss(t, 46.9 + i * .1, 47.05 + i * .1);
+    r.n.style.opacity = ss(t, k(46.9) + i * .1, k(47.05) + i * .1);
   });
   kseg.style.opacity = t >= TBOOK - .02 ? 1 : 0;
   kseg.style.background = mixc('#1E9E57', '#B48A49', ss(t, TBOOK + .5, TBOOK + 1.4));
   // Karan's card turns green as booked, then folds into one dot
-  const a = sp(t, 46.62, 9), f = sp(t, TBOOK - .42, 9), g = ss(t, 46.95, 47.25);
+  const a = sp(t, k(46.62), 9), f = sp(t, TBOOK - .42, 9), g = ss(t, k(46.95), k(47.25));
   if (t < TBOOK - .02) {
     card({ parent: s7b.push, x: lerp(KCARD[0], DOTXY[0], f), y: lerp(lerp(H + 150, KCARD[1], a), DOTXY[1], f),
       w: lerp(CW, TW / 4 / CS, f), h: lerp(CH, BH / CS, f), radius: lerp(22, 6 / CS, f),
@@ -729,7 +779,7 @@ s7b.render = t => {
   // weekly AI tips: bigger, centred, the dashboard dimmed behind
   const tp = sp(t, TWEEK + .05, 8);
   scrim.style.opacity = .5 * ss(t, TWEEK, TWEEK + .45);
-  const th = V ? tipsWrap.offsetHeight : TIPH, ts = TIPS * lerp(1, .82, sp(t, 53.05, 9)), cy = pick(520, 900);
+  const th = V ? tipsWrap.offsetHeight : TIPH, ts = TIPS * lerp(1, .82, sp(t, k(53.05), 9)), cy = pick(520, 900);
   tipsWrap.style.transformOrigin = '0 0';
   tipsWrap.style.transform = `translate(${W / 2 - TIPW / 2 * ts}px,${lerp(H + 80, cy - th / 2 * ts, tp)}px) scale(${ts})`;
   tipsWrap.style.opacity = ss(t, TWEEK, TWEEK + .1);
@@ -742,14 +792,14 @@ s7b.render = t => {
 };
 
 // ================================================================== 8. white label (53.4 - 57.2)
-const s8 = scene(53.4, 57.2);
+const s8 = scene(k(53.4), k(57.2));
 const BR = [
   { c: '#CFC8BD', name: '', email: 'you@yourcompany.in', pj: ['', ''], logo: '', round: 24 },
   { c: '#A9803F', name: 'Northstar Homes', email: 'rohan@northstarhomes.in', pj: ['Northstar Skyline', 'Northstar Greens'], logo: 'NH', round: 52 },
   { c: '#1F3A5F', name: 'Skyline Developers', email: 'sales@skylinedevelopers.in', pj: ['Skyline Heights', 'Skyline One'], logo: 'SD', round: 18 },
   { c: '#2E6B4A', name: 'Greenfield Realty', email: 'team@greenfieldrealty.in', pj: ['Greenfield Meadows', 'Greenfield Park'], logo: 'GF', round: 34 },
 ];
-const TFLIP = [53.4, wt('p13', 'name'), wt('p13', 'colours'), wt('p13', 'projects')];
+const TFLIP = [k(53.4), wt('p13', 'name'), wt('p13', 'colours'), wt('p13', 'projects')];
 TFLIP.slice(1).forEach(t => cue(t, 'tick', .55));
 const sign = E('div', 'signin', s8.push);
 const sbar = E('div', 'bar', sign);
@@ -779,7 +829,7 @@ const brandAt = t => { let b = 0; for (let i = 1; i < 4; i++) if (t >= TFLIP[i])
 const L8 = pick({ x: 960, y: 510, s: 1.15 }, { x: 540, y: 880, s: 1.5 });
 s8.render = t => {
   push(s8, t, L8.x, L8.y, 1, 1.04);
-  put(sign, L8.x, L8.y, L8.s * lerp(.86, 1, sp(t, 53.4, 11)), 1);
+  put(sign, L8.x, L8.y, L8.s * lerp(.86, 1, sp(t, k(53.4), 11)), 1);
   // the leaving brand travels a little past the clip so no hairline of it stays behind
   rolls.forEach(rl => rl.kids.forEach((k, i) => {
     let y;
@@ -793,7 +843,7 @@ s8.render = t => {
 };
 
 // ================================================================== 9. close (57.2 - 66.3)
-const s9 = scene(57.2, END);
+const s9 = scene(k(57.2), END);
 const L9 = pick({ logo: [960, 168, 620], fr: [960, 512, 700, 400], cta: 806, url: [960, 896, 470, 68], cs: 1 },
   { logo: [540, 330, 780], fr: [540, 860, 900, 640], cta: 1300, url: [540, 1428, 600, 92], cs: 1.28 });
 const fold9 = css(E('div', 'abs', s9.push), { background: '#fff', borderRadius: 30, position: 'absolute' });
@@ -803,25 +853,25 @@ const lock = E('div', 'abs', s9.push);
 IMG('../assets/brand/golden-ratio-horizontal-gold-2400w.png', lock, '').style.width = L9.logo[2] + 'px';
 css(lock, { left: L9.logo[0] - L9.logo[2] / 2, top: L9.logo[1] - L9.logo[2] * 795 / 2400 / 2 });
 const cta = css(E('div', 'cta', s9.push), { top: L9.cta - 32 * L9.cs, transform: `scale(${L9.cs})`, transformOrigin: '50% 0' });
-const ctaws = TM[13].words.slice(2, 6).map(w => Object.assign(E('span', 'w' + (w.em ? ' serif gold' : ''), cta, w.w), { t: w.t }));
+const ctaws = TM[13].words.slice(2, 6).map(w => Object.assign(E('span', 'w' + (w.em ? ' serif gold' : '') + dv(w.w), cta, w.w.replace(/[,.\u0964]+$/, '')), { t: w.t }));
 const url = css(E('div', 'url', s9.push, 'goldenratiosolution.com'), { width: L9.url[2], height: L9.url[3], fontSize: 30 * L9.cs });
 const TGR9 = wt('p14', 'golden'), TDEMO = wt('p14', 'demo');
 cue(TGR9 + .03, 'impact', .55); cue(TDEMO + .02, 'thump', .45);
 s9.render = t => {
-  push(s9, t, W / 2, H / 2, 1, 1.04, 57.2, 63.3);
+  push(s9, t, W / 2, H / 2, 1, 1.04, k(57.2), END - 3); // still for the last 3 s
   // sign-in card folds back into Karan's lead card, which opens into the keys photo
-  const f = sp(t, 57.2, 11);
-  if (t < 57.5) {
+  const f = sp(t, k(57.2), 11);
+  if (t < k(57.5)) {
     fold9.style.display = 'block'; frame.style.display = 'none';
     put(fold9, L8.x, L8.y, L8.s, 1);
     css(fold9, { width: lerp(640, CW * CS / L8.s, f), height: lerp(760, CH * CS / L8.s, f), boxShadow: '0 30px 80px rgba(26,23,18,.14)' });
   } else {
     fold9.style.display = 'none';
-    const g = sp(t, 57.62, 8);
+    const g = sp(t, k(57.62), 8);
     const fw = lerp(CW * CS, L9.fr[2], g), fh = lerp(CH * CS, L9.fr[3], g), fx = lerp(L8.x, L9.fr[0], g), fy = lerp(L8.y, L9.fr[1], g);
     frame.style.display = 'block';
     css(frame, { width: fw, height: fh, borderRadius: lerp(22, 30, g) });
-    put(frame, fx, fy, 1, ss(t, 57.62, 57.7));
+    put(frame, fx, fy, 1, ss(t, k(57.62), k(57.7)));
     if (g < .6) card({ parent: s9.push, x: fx, y: fy, s: 1, w: fw, h: fh, face: 1 - ss(g, 0, .3), o: 1 - ss(g, .25, .45), sub: 'booked', tag: 'booked',
       border: 'rgba(30,158,87,1)', bg: '#EEF8F1', avbg: '#DDF2E5', avfg: '#17804A' });
   }
@@ -836,7 +886,7 @@ s9.render = t => {
 const caps = E('div', ''); caps.id = 'caps';
 const capP = E('div', 'cp', caps);
 const CSZ = pick({ font: 40, bottom: 48, pad: '14px 34px', max: 1560 }, { font: 46, bottom: 130, pad: '18px 36px', max: 980 });
-css(capP, { font: `500 ${CSZ.font}px Inter`, padding: CSZ.pad, maxWidth: CSZ.max, lineHeight: '1.25', columnGap: '.28em' });
+css(capP, { font: `500 ${CSZ.font}px Inter${HI ? ', "Noto Sans Devanagari"' : ''}`, padding: CSZ.pad, maxWidth: CSZ.max, lineHeight: '1.25', columnGap: '.28em' });
 caps.style.bottom = CSZ.bottom + 'px';
 const CUTS = SURF.map(s => s[0]).slice(1);
 const SEGS = []; // caption segments: a line's words split at cuts; each segment ends at the next cut
@@ -844,7 +894,9 @@ TM.forEach(line => {
   let seg = null;
   line.words.forEach(w => {
     const cutBefore = seg && CUTS.some(c => c <= w.t && c > seg.words[seg.words.length - 1].t);
-    if (!seg || cutBefore) { seg = { words: [] }; SEGS.push(seg); }
+    // Hindi lines run long: a long segment also breaks after a comma once it holds four words
+    const commaBreak = HI && seg && seg.words.length >= 4 && /[,:]$/.test(seg.words[seg.words.length - 1].w) && line.words.length - line.words.indexOf(w) >= 3;
+    if (!seg || cutBefore || commaBreak) { seg = { words: [] }; SEGS.push(seg); }
     seg.words.push(w);
   });
 });
@@ -855,7 +907,7 @@ SEGS.forEach((s, i) => {
 });
 // no full stops on screen
 const capEls = SEGS.map(s => s.words.map(w => {
-  const e = document.createElement('span'); e.className = 'cw' + (w.em ? ' em' : ''); e.textContent = w.w.replace(/\.$/, '');
+  const e = document.createElement('span'); e.className = 'cw' + (w.em ? ' em' : '') + dv(w.w); e.textContent = w.w.replace(/[.\u0964]+$/, '').replace(/\u0964/g, '');
   if (w.em) e.style.fontSize = (CSZ.font * 1.2) + 'px';
   return e;
 }));
@@ -897,14 +949,18 @@ window.seek = async t => {
 window.CUES = CUES;
 window.CUTS = SC.map(s => s.a).concat([END]); // scene boundaries: motion-blur subframes never cross them
 window.CAPSEGS = SEGS.map(s => ({ a: s.a, b: s.b, text: s.words.map(w => w.w).join(' ') }));
-window.FILM = { W, H, END, SHAPE };
+window.FILM = { W, H, END, SHAPE, LANG, k };
 (async () => {
+  if (HI) await Promise.all(['600 40px "Noto Sans Devanagari"', '500 40px "Noto Sans Devanagari"', 'italic 400 40px "Noto Serif Devanagari"']
+    .map(f => document.fonts.load(f, '\u0915\u093f\u0924\u0928\u0940')));
   await document.fonts.ready;
-  if (V) { // 9:16: the two Inter lines of the question share the largest size (72 px at most) that fits the frame
+  if (V || HI) { // the Inter lines of the question share the largest size that fits the frame; the Hindi serif line fits on its own
     s1.root.style.display = 'block';
     const width = l => { const r = document.createRange(); r.selectNodeContents(l); return r.getBoundingClientRect().width; };
-    const k = Math.min(1, ...qlines.slice(0, 2).map(l => (W - 80) / width(l)));
-    qlines.slice(0, 2).forEach(l => { l.style.fontSize = (72 * k).toFixed(1) + 'px'; });
+    const fit = (ls, m = V ? 80 : 240) => Math.min(1, ...ls.map(l => (W - m) / width(l)));
+    const sans = qlines.slice(0, HI ? qlines.length - 1 : 2), ks = fit(sans);
+    sans.forEach(l => { l.style.fontSize = (pick(78, 72) * ks).toFixed(1) + 'px'; });
+    if (HI) { const ser = qlines[qlines.length - 1], kr = fit([ser], pick(240, 150)); ser.querySelectorAll('.serif').forEach(e => { e.style.fontSize = (pick(96, 90) * kr).toFixed(1) + 'px'; }); }
     s1.root.style.display = 'none';
   }
   await Promise.all(IMGS.map(i => i.complete && i.naturalWidth ? 0 : new Promise(res => {

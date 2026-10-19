@@ -1,5 +1,5 @@
 """Encode a frame folder + the mix to H.264 CRF 18 yuv420p, plus a 720p WhatsApp copy and (optionally) a poster.
-    python tools/encode.py frames/16x9 out/builder-pitch-16x9 [--poster 64.0]"""
+    python tools/encode.py frames/16x9 out/builder-pitch-16x9 [--poster 64.0] [--audio out/hi/audio/mix.wav]"""
 import argparse
 import os
 import shutil
@@ -8,10 +8,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ap = argparse.ArgumentParser()
-ap.add_argument("frames"); ap.add_argument("name"); ap.add_argument("--poster", type=float)
+ap.add_argument("frames"); ap.add_argument("name"); ap.add_argument("--poster", type=float); ap.add_argument("--audio", default="out/audio/mix.wav")
 a = ap.parse_args()
 frames, name = ROOT / a.frames, ROOT / a.name
-audio = ROOT / "out/audio/mix.wav"
+audio = ROOT / a.audio
 ff = shutil.which("ffmpeg")
 first = sorted(frames.glob("*.jpg"))[0]
 from PIL import Image

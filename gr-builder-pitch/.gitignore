@@ -7,3 +7,4 @@ gen/
 __pycache__/
 out/qa/build.log
 *.part.mp4
+out/hi/qa/build.log
