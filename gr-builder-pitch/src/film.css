@@ -72,6 +72,8 @@ img{user-select:none}
 .q{position:absolute;left:0;right:0;text-align:center;font:600 78px Inter;letter-spacing:-2.2px;line-height:1}
 .q .w{display:inline-block;margin:0 .13em;white-space:nowrap}
 .q .serif{font-size:96px;letter-spacing:-.5px}
+html[data-shape="9x16"] .q{font-size:72px;letter-spacing:-1.6px;white-space:nowrap}
+html[data-shape="9x16"] .q .serif{font-size:90px}
 
 /* chips + thread (scene 3) */
 .chip{position:absolute;display:flex;align-items:center;gap:14px;padding:18px 30px;border-radius:999px;background:#fff;
@@ -120,6 +122,12 @@ img{user-select:none}
 .ctab .rw{position:absolute;left:0;right:0}
 .ctab .hlrow{position:absolute;left:0;right:0;background:#FBF3E4;border-top:3px solid #A9803F;border-bottom:3px solid #A9803F}
 .scrim{position:absolute;inset:0;background:#1A1712}
+
+/* 9:16 leads list as stacked lead cards */
+.scard{position:absolute;background:#fff;border:2px solid #ECEAE7;border-radius:28px;overflow:hidden;box-shadow:0 10px 30px rgba(26,23,18,.06)}
+.slbl{position:absolute;left:36px;font:600 26px Inter;letter-spacing:2.4px;color:#9a948c}
+.sdd{position:absolute;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;border:2.5px solid #2a2a2a;border-radius:12px;font:400 38px Inter;color:#1d1d1d;background:#fff;white-space:nowrap}
+.sbtn{position:absolute;display:flex;align-items:center;justify-content:center;border:2px solid #E3E1DE;border-radius:14px;font:600 38px Inter;color:#5f5f5f;background:#fff}
 
 /* 9:16 HTML panels where the real layer's text lines are too wide to reach 34 px at 1080 wide */
 .tipsh{position:absolute;left:0;top:0;background:#fff;border-radius:34px;box-shadow:0 30px 80px rgba(26,23,18,.22);overflow:hidden;color:#1A1712}

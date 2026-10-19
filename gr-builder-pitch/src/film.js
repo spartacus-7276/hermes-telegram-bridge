@@ -167,7 +167,7 @@ const PHOTO = (scn, name, ox, oy, sc) => css(IMG('../gen/photos/' + name + '.jpg
 // ================================================================== 1. hook (0 - 5.2)
 const s1 = scene(0, 5.2);
 const PH1 = pick({ w: 500, h: 1040, x: 710, y: 92, s: 1, rows: 232, lift: [960, 600] },
-  { w: 500, h: 1040, x: 290, y: 330, s: 1.4, rows: 232, lift: [540, 1060] });
+  { w: 500, h: 1040, x: 290, y: 872, s: 1.04, rows: 232, lift: [540, 760] });
 const mph = css(E('div', 'mphone', s1.push), { width: PH1.w, height: PH1.h, left: PH1.x, top: PH1.y, transformOrigin: '50% 0' });
 const mscr = E('div', 'scr', mph); E('div', 'notch', mscr); E('div', 'hd', mscr, 'Recents');
 E('div', 'tabs', mscr, '<span>All</span><span class="on">Missed</span>');
@@ -180,7 +180,7 @@ const mrowEls = MISSED.map((tm, k) => E('div', 'mrow', mrows,
 ROWT.forEach(t => cue(t, 'tick', .8));
 // the question, typed at the word times
 const QW = TM[0].words;
-const QL = pick({ split: [0, 6], y: [470, 582] }, { split: [0, 4, 6, 10], y: [600, 705, 810, 930] });
+const QL = pick({ split: [0, 6], y: [470, 582] }, { split: [0, 6, 11], y: [270, 375, 500] });
 const qlines = QL.y.map(y => css(E('div', 'q', s1.push), { top: y - 50 }));
 const qws = QW.map((w, i) => {
   let li = 0; QL.split.forEach((s, k) => { if (i >= s) li = k; });
@@ -188,7 +188,7 @@ const qws = QW.map((w, i) => {
 });
 s1.render = t => {
   push(s1, t, W / 2, H / 2);
-  mph.style.opacity = lerp(.16, 1, ss(t, 4.45, 4.85));
+  mph.style.opacity = V ? 1 : lerp(.16, 1, ss(t, 4.45, 4.85)); // 9:16: the phone sits below the question, never behind it
   mph.style.transform = `translateY(${lerp(18, 0, sp(t, 4.4, 9))}px) scale(${PH1.s})`;
   MISSED.forEach((_, k) => {
     let y = 0; for (let j = k + 1; j < MISSED.length; j++) y += sp(t, ROWT[j], 16) * RH;
@@ -390,6 +390,27 @@ T2.cols.forEach(([x0, x1], j) => css(crop(k2b, 'c02b_karan', x0 + 4, 1476, x1, 1
 const DD = crop(tab2.root, 'c02b_dd', 2550, 1506, 2800, 1562);
 const ddAt = tab2.at(T2.cols.length - 1, 2, 2550, 1506); css(DD, { left: ddAt[0], top: ddAt[1] });
 const tint2 = css(E('div', 'hl', tab2.root), { left: 0, right: 0, top: tab2.hh + 260, height: 130 });
+// 9:16: the list re-set as three lead cards (Harsh, Karan, Kavya), Karan's in the middle; names 40 px, Move 36 px
+const ST = { x: 60, w: 960, h: 440, gap: 24, s: 1.3 };
+ST.top = 960 - ST.h * 1.5 - ST.gap;
+const stY = k => ST.top + k * (ST.h + ST.gap);
+let stack = [], stTitle;
+if (V) {
+  tab2.root.style.display = 'none';
+  stTitle = crop(s5a.push, 'c02_bg', 640, 1010, 1300, 1100); stTitle.style.mixBlendMode = 'multiply';
+  const chev = '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M6 9l6 6 6-6" stroke="#1d1d1d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  stack = [1, 2, 3].map(ri => {
+    const y0 = 1210 + ri * 130;
+    const c = css(E('div', 'scard', s5a.push), { left: ST.x, top: 0, width: ST.w, height: ST.h });
+    const nm = crop(c, 'c02_r' + ri, 640, y0 + 18, 1040, y0 + 112); tl(nm, 36, 26, ST.s); nm.style.mixBlendMode = 'multiply';
+    css(E('div', 'slbl', c, 'OWNER'), { top: 166 });
+    const ow = crop(c, 'c02_r' + ri, 1930, y0 + 40, 2200, y0 + 92); tl(ow, 36, 196, ST.s); ow.style.mixBlendMode = 'multiply';
+    css(E('div', 'slbl', c, 'MOVE TO'), { top: 284 });
+    const dd = css(E('div', 'sdd', c, '<span>Choose\u2026</span>' + chev), { left: 36, top: 320, width: 600, height: 92 });
+    css(E('div', 'sbtn', c, 'Move'), { left: 660, top: 320, width: ST.w - 36 - 660, height: 92 });
+    return { c, dd };
+  });
+}
 const cursor = E('div', 'abs', s5a.push, SVG.cursor);
 // the new-lead card: the real one at 0.72 in 16:9 (29 px text); 9:16 re-sets its parts in a narrower card at 0.84 (34 px)
 const leadImg = css(E('div', 'abs', s5a.push), { position: 'absolute' });
@@ -418,30 +439,47 @@ s5a.render = t => {
   push(s5a, t, W / 2, H / 2);
   // the list rises in behind the card
   const rise = (1 - sp(t, 27.85, 8)) * H * 1.05;
-  tl(tab2.root, T2X, T2Y + rise, T2.z, 1);
   s5abg.style.transform = `translateY(${rise}px)`;
   const open = sp(t, 30.95, 14);
-  tab2.rows.forEach((r, i) => {
-    if (i < 2) lt(r, 0, 0, 1, 1);
-    else if (i === 2) lt(r, 0, 0, 1, ss(t, 31.28, 31.4) * (1 - ss(t, 33.06, 33.1)));
-    else lt(r, 0, -130 * (1 - open), 1, 1);
-  });
-  hlrow.style.opacity = k2b.style.opacity = ss(t, 33.06, 33.1) * (1 - ss(t, 33.62, 33.72));
-  DD.style.opacity = ss(t, 32.45, 32.5) * (1 - ss(t, 33.06, 33.1));
-  tint2.style.opacity = ss(t, 31.28, 31.4) * (1 - ss(t, 31.6, 32.4)) * .9;
+  if (!V) {
+    tl(tab2.root, T2X, T2Y + rise, T2.z, 1);
+    tab2.rows.forEach((r, i) => {
+      if (i < 2) lt(r, 0, 0, 1, 1);
+      else if (i === 2) lt(r, 0, 0, 1, ss(t, 31.28, 31.4) * (1 - ss(t, 33.06, 33.1)));
+      else lt(r, 0, -130 * (1 - open), 1, 1);
+    });
+    hlrow.style.opacity = k2b.style.opacity = ss(t, 33.06, 33.1) * (1 - ss(t, 33.62, 33.72));
+    DD.style.opacity = ss(t, 32.45, 32.5) * (1 - ss(t, 33.06, 33.1));
+    tint2.style.opacity = ss(t, 31.28, 31.4) * (1 - ss(t, 31.6, 32.4)) * .9;
+  } else {
+    tl(stTitle, ST.x, ST.top - 150 + rise, ST.s, 1);
+    stack.forEach((c, k) => {
+      let y = stY(k) + rise, o = 1;
+      if (k === 1) o = ss(t, 31.28, 31.4) * (1 - ss(t, 33.62, 33.72));
+      if (k === 2) y -= (ST.h + ST.gap) * (1 - open);
+      c.c.style.transform = `translateY(${y}px)`; c.c.style.opacity = o;
+    });
+    const K = stack[1], hi = ss(t, 33.06, 33.1), fl = ss(t, 31.28, 31.4) * (1 - ss(t, 31.6, 32.4));
+    K.c.style.background = mixc('#FFFFFF', '#FBF3E4', Math.max(hi, fl * .9));
+    K.c.style.border = hi > 0 ? `3px solid rgba(169,128,63,${hi})` : '2px solid #ECEAE7';
+    K.dd.firstChild.textContent = t >= 32.45 ? 'Rohan Kulkarni' : 'Choose\u2026';
+  }
+  // Karan's slot, his dropdown and his Move button, in screen px
+  const KS = V ? [ST.x + ST.w / 2, stY(1) + ST.h / 2] : t2s(...tab2.at(0, 2, 880, 1535));
+  const DDP = V ? [ST.x + 36 + 300, stY(1) + 366] : t2s(...tab2.at(T2.cols.length - 1, 2, 2671, 1533));
+  const MVP = V ? [ST.x + 660 + (ST.w - 696) / 2, stY(1) + 366] : t2s(...tab2.at(T2.cols.length - 1, 2, 2882, 1534));
   // booked bubble -> new-lead card
   const r = doneRect(27.6), bp = sp(t, 27.6, 10);
   put(xfer, lerp(r.x, W / 2, bp), lerp(r.y, pick(500, 900), bp), lerp(r.w / LAY.wa_done.w, .2, bp), 1 - ss(t, 27.72, 27.86));
   const gp = sp(t, 27.68, 9), land = sp(t, TLANDS, 18), fold = sp(t, 30.95, 9);
   const cy = pick(500, 820);
-  const rowS = t2s(...tab2.at(0, 2, 880, 1535));
-  put(leadImg, lerp(W / 2, rowS[0], fold), lerp(lerp(cy - 40, cy, land), rowS[1], fold),
+  put(leadImg, lerp(W / 2, KS[0], fold), lerp(lerp(cy - 40, cy, land), KS[1], fold),
     lerp(lerp(.12, LEADS * 1.02, gp) * lerp(1, .98, land), .1, fold), ss(t, 27.68, 27.8) * (1 - ss(t, 31.2, 31.35)));
   const sb = sp(t, TCONV, 5);
   sumBox.style.clipPath = `inset(-10px ${(1 - sb) * 100}% -10px -10px)`;
   sumBox.style.opacity = ss(t, TCONV, TCONV + .1);
   // the manager's one click
-  const dd = t2s(...tab2.at(T2.cols.length - 1, 2, 2671, 1533)), mv = t2s(...tab2.at(T2.cols.length - 1, 2, 2882, 1534));
+  const dd = DDP, mv = MVP;
   const c0 = [pick(1500, 760), pick(960, 1500)];
   const a1 = sp(t, 31.85, 7), a2 = sp(t, 32.62, 9);
   const cx = lerp(lerp(c0[0], dd[0], a1), mv[0], a2), cyy = lerp(lerp(c0[1], dd[1], a1), mv[1], a2);
@@ -452,7 +490,7 @@ s5a.render = t => {
   // Karan's row leaves as the card, for Rohan
   if (t >= 33.6) {
     const p = ein(clamp((t - 33.7) / .5));
-    const rs = t2s(...tab2.at(0, 2, 900, 1535));
+    const rs = V ? KS : t2s(...tab2.at(0, 2, 900, 1535));
     card({ parent: s5a.push, x: lerp(Math.max(rs[0], CW * CS / 2 + 30), W + 500, p), y: rs[1], s: CS * lerp(.9, 1, ss(t, 33.6, 33.75)),
       o: ss(t, 33.6, 33.7), sub: 'rohan', tag: 'rohan' });
   }
@@ -853,6 +891,13 @@ window.CAPSEGS = SEGS.map(s => ({ a: s.a, b: s.b, text: s.words.map(w => w.w).jo
 window.FILM = { W, H, END, SHAPE };
 (async () => {
   await document.fonts.ready;
+  if (V) { // 9:16: the two Inter lines of the question share the largest size (72 px at most) that fits the frame
+    s1.root.style.display = 'block';
+    const width = l => { const r = document.createRange(); r.selectNodeContents(l); return r.getBoundingClientRect().width; };
+    const k = Math.min(1, ...qlines.slice(0, 2).map(l => (W - 80) / width(l)));
+    qlines.slice(0, 2).forEach(l => { l.style.fontSize = (72 * k).toFixed(1) + 'px'; });
+    s1.root.style.display = 'none';
+  }
   await Promise.all(IMGS.map(i => i.complete && i.naturalWidth ? 0 : new Promise(res => {
     i.addEventListener('load', res, { once: true }); i.addEventListener('error', () => { console.error('load', i.src); res(); }, { once: true });
   })));
