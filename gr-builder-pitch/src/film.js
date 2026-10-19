@@ -326,7 +326,8 @@ cue(17.42, 'pop', .6);
 const s4b = scene(19.6, 27.6);
 // 16:9: the phone on cream at 0.56 (bubble text 29 px); 9:16: the screen fills the frame at 0.692 (36 px)
 const WZ = pick(.56, 1080 / 1560), WTOP = pick(40, 0), BEZ = pick(26, 0);
-const WSH = (H - WTOP * 2) / WZ - 2 * BEZ; // screen height in sheet px
+const WBOT = CAP === '1' ? pick(150, 300) : WTOP; // with captions the phone stops above the caption strip
+const WSH = (H - WTOP - WBOT) / WZ - 2 * BEZ; // screen height in sheet px
 const waph = E('div', 'waphone' + (V ? ' full' : ''), s4b.push);
 const wascr = E('div', 'scr', waph); wascr.style.height = WSH + 'px';
 LI('wa_head', wascr);
@@ -788,7 +789,7 @@ s9.render = t => {
 const caps = E('div', ''); caps.id = 'caps';
 const capP = E('div', 'cp', caps);
 const CSZ = pick({ font: 40, bottom: 48, pad: '14px 34px', max: 1560 }, { font: 46, bottom: 130, pad: '18px 36px', max: 980 });
-css(capP, { font: `500 ${CSZ.font}px Inter`, padding: CSZ.pad, maxWidth: CSZ.max, lineHeight: 1.25, columnGap: '.28em' });
+css(capP, { font: `500 ${CSZ.font}px Inter`, padding: CSZ.pad, maxWidth: CSZ.max, lineHeight: '1.25', columnGap: '.28em' });
 caps.style.bottom = CSZ.bottom + 'px';
 const CUTS = SURF.map(s => s[0]).slice(1);
 const SEGS = []; // caption segments: a line's words split at cuts; each segment ends at the next cut
@@ -847,6 +848,7 @@ window.seek = async t => {
   return t;
 };
 window.CUES = CUES;
+window.CUTS = SC.map(s => s.a).concat([END]); // scene boundaries: motion-blur subframes never cross them
 window.CAPSEGS = SEGS.map(s => ({ a: s.a, b: s.b, text: s.words.map(w => w.w).join(' ') }));
 window.FILM = { W, H, END, SHAPE };
 (async () => {

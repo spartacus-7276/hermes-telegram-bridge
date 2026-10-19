@@ -177,6 +177,6 @@ img{user-select:none}
 #caps .cp{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;border-radius:999px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
 #caps .cw{display:inline-block;white-space:nowrap}
 #caps .em{font-family:"Instrument Serif";font-style:italic;color:var(--gold)}
-#caps.on-photo .cp{background:rgba(26,23,18,.42);color:#fff}
-#caps.on-cream .cp{background:rgba(255,255,255,.72);color:var(--ink);box-shadow:0 6px 20px rgba(26,23,18,.06)}
-#caps.on-dark .cp{background:rgba(255,255,255,.10);color:#fff}
+#caps.on-photo .cp{background:rgba(26,23,18,.48);color:#fff}
+#caps.on-cream .cp{background:rgba(255,255,255,.86);color:var(--ink);border:1.5px solid rgba(26,23,18,.08);box-shadow:0 8px 24px rgba(26,23,18,.10)}
+#caps.on-dark .cp{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.08)}

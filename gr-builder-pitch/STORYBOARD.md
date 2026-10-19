@@ -32,3 +32,22 @@ Sound: voice clips at their starts, plus one soft synthesized SFX per event. The
 - **No chart in crm 12.** The company overview has no bookings chart, so the "Top performers" panel is replaced, in the CRM's own style, by "Bookings by channel" (one dot per booking). That gives Karan's card a dot to fold into. The KPI numbers roll between the real crm 01 (before) and crm 12 (after) values.
 - **Sign-in card.** There is no CRM sign-in screenshot, so the card is built in the page. The two extra brands use plain monograms (SD, GF).
 - **Photo 02.** He is looking at his phone, so the camera sees its back. Nothing is composited there; the card flies into the phone instead.
+
+## Round 2: readability (approved stills + fixes)
+
+The rule: at 1920x1080, nothing the viewer needs to read is under 24 px, and body text is 28 px or more. At 1080x1920, body text is 34 px or more. The camera pushes in rather than the type shrinking. These are the measured sheet-pixel font sizes of the real screens, and the scales chosen from them:
+
+| Layer | Sheet font | 16:9 scale → px | 9:16 scale → px |
+|---|---|---|---|
+| WhatsApp bubbles | 52 | 0.56 → 29 | 0.692 (screen fills the frame) → 36 |
+| New-lead card (crm 00) | 41 | 0.72 → 29.5 | parts re-set in a narrower card at 0.84 → 34; the AI summary is set as HTML |
+| CRM tables (crm 02/06/05) | 31 | compact column cuts at 1.05–1.15 → 33–36 | 1.08–1.15 → 34–36 |
+| KPI labels (crm 12) | 26 | 1.08 → 28 | 1.32 → 34 |
+| AI tips card | 42 | 0.68 → 29 (about 1.45x the first cut), centred, dashboard dimmed | set as HTML at 35 |
+| Call transcript | 44 | 0.64 → 28 | set as HTML at 36 |
+
+- **Compact tables:** the real rows are cut into column cells (name, owner, Move to; or name, source, status, follow-up) and set closer together, so five rows fill the frame at about 1.15x. In scene 5 Karan's row is centred.
+- **Analytics:** the frame holds only the title, the four KPI tiles and "Bookings by channel". The per-executive table is gone and every edge has a margin.
+- **Scene 2:** Karan's card and the three "Another builder" cards are 1.5x the first cut.
+- **Scene 6:** the breakfast-table photo is framed at 1.4x (07) and 1.6x (07b), so the composited ringing screen reads before the transcript.
+- **Captions:** with captions on, the 16:9 chat phone and the 9:16 full-screen chat stop above the caption strip.
