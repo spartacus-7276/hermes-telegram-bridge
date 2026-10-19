@@ -1,0 +1,201 @@
+/* Golden Ratio builder pitch: shared styles. Every moving value is set from window.seek(t); no CSS animations or transitions. */
+@font-face{font-family:Inter;src:url(../fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../fonts/Inter-Medium.otf);font-weight:500}
+@font-face{font-family:Inter;src:url(../fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../fonts/Inter-Bold.otf);font-weight:700}
+@font-face{font-family:"Instrument Serif";src:url(../fonts/InstrumentSerif-Italic.ttf);font-style:italic}
+@font-face{font-family:"Instrument Serif";src:url(../fonts/InstrumentSerif-Regular.ttf);font-style:normal}
+/* Hindi version: Devanagari falls back to Noto (Latin stays Inter / Instrument Serif); Noto Serif Devanagari has no italic, so it is slanted */
+@font-face{font-family:"Noto Sans Devanagari";src:url(../fonts/NotoSansDevanagari-VF.ttf);font-weight:100 900;unicode-range:U+0900-097F,U+1CD0-1CFF,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+@font-face{font-family:"Noto Serif Devanagari";src:url(../fonts/NotoSerifDevanagari-VF.ttf);font-weight:100 900;unicode-range:U+0900-097F,U+1CD0-1CFF,U+200C-200D,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
+
+:root{--cream:#FBF8F3;--ink:#1A1712;--gold:#A9803F;--wa:#25D366;--muted:#7A7266}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--cream);overflow:hidden}
+body.caponly,body.caponly #stage{background:transparent}
+#stage{position:relative;overflow:hidden;background:var(--cream);font-family:Inter;color:var(--ink);
+  -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 0}
+.scene{position:absolute;inset:0;overflow:hidden;display:none}
+.push{position:absolute;inset:0}
+.abs{position:absolute;left:0;top:0}
+.sheet{position:absolute;left:0;top:0;transform-origin:0 0}
+.sheet img,.lay{position:absolute;display:block}
+img{user-select:none}
+.serif{font-family:"Instrument Serif";font-style:italic;font-weight:400}
+.gold{color:var(--gold)}
+
+/* the lead card: Karan's enquiry, the one object the film never cuts away from */
+.lead{position:absolute;left:0;top:0;border-radius:22px;background:#fff;border:2px solid var(--gold);
+  box-shadow:0 14px 34px rgba(26,23,18,.13),0 2px 6px rgba(26,23,18,.06);overflow:hidden}
+.lead .face{position:absolute;inset:0;display:flex;align-items:center;gap:20px;padding:0 24px}
+.lead .av{flex:none;width:76px;height:76px;border-radius:50%;background:#F4ECDF;color:var(--gold);
+  display:flex;align-items:center;justify-content:center;font:600 28px Inter;letter-spacing:.5px}
+.lead .tx{flex:1;min-width:0;padding-top:4px}
+.lead .nm{font:600 34px Inter;letter-spacing:-.4px;white-space:nowrap}
+.lead .sb{font:400 28px Inter;color:var(--muted);margin-top:4px;white-space:nowrap;display:flex;align-items:center;gap:9px}
+.lead .sb svg{width:26px;height:26px;flex:none}
+.lead .tg{position:absolute;right:16px;top:14px;font:600 26px Inter;padding:6px 15px;border-radius:999px;white-space:nowrap}
+.lead .pill{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px;color:#fff;font:700 34px Inter;white-space:nowrap}
+.lead .pill svg{width:42px;height:42px}
+.tick{position:absolute;width:60px;height:60px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(169,128,63,.28)}
+.tick svg{width:30px;height:30px}
+
+/* the card as the incoming AI call (landscape, like the phone on the table) */
+.lead .ringf{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:#fff;opacity:0}
+.lead .ringf .nh{flex:none;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#E9CF98,#A9803F 70%);
+  color:#2A2116;display:flex;align-items:center;justify-content:center;font:700 26px Inter}
+.lead .ringf .rn{font:600 26px Inter;white-space:nowrap}
+.lead .ringf .rs{font:400 18px Inter;color:#B9AE9C;white-space:nowrap;margin-top:2px}
+
+/* frosted clock pill (scene 2) */
+.clock{position:absolute;display:flex;align-items:center;gap:14px;padding:14px 26px 14px 22px;border-radius:999px;
+  background:rgba(26,23,18,.46);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:#fff}
+.clock .ic{width:30px;height:30px;opacity:.85}
+.clock .digits{position:relative;height:64px;overflow:hidden;font:300 54px Inter;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.clock .ln{position:absolute;left:0;top:0;white-space:pre;display:flex}
+.clock .ln span{display:inline-block;line-height:64px}
+
+/* missed-call phone (scene 1) */
+.mphone{position:absolute;border-radius:70px;background:#121110;padding:14px}
+.mphone .scr{position:relative;width:100%;height:100%;border-radius:57px;background:#fff;overflow:hidden}
+.mphone .hd{position:absolute;left:44px;top:74px;font:700 50px Inter;letter-spacing:-1px}
+.mphone .tabs{position:absolute;left:44px;top:150px;display:flex;gap:10px;font:600 22px Inter}
+.mphone .tabs span{padding:9px 20px;border-radius:999px;background:#F2EFEA;color:#6A635A}
+.mphone .tabs span.on{background:var(--ink);color:#fff}
+.mphone .notch{position:absolute;left:50%;top:18px;width:120px;height:34px;margin-left:-60px;border-radius:20px;background:#121110}
+.mrow{position:absolute;left:0;right:0;height:86px;display:flex;align-items:center;gap:18px;padding:0 34px 0 40px;background:#fff}
+.mrow .mi{width:22px;height:22px;flex:none}
+.mrow .mn{flex:1;font:600 25px Inter;color:#D93A3A;white-space:nowrap}
+.mrow .ms{display:block;font:400 18px Inter;color:#8B847A;margin-top:3px}
+.mrow .mt{font:400 21px Inter;color:#8B847A}
+.mrow:after{content:"";position:absolute;left:80px;right:0;bottom:0;height:1px;background:#EEEAE4}
+
+/* hook question */
+.q{position:absolute;left:0;right:0;text-align:center;font:600 78px Inter;letter-spacing:-2.2px;line-height:1}
+.q .w{display:inline-block;margin:0 .13em;white-space:nowrap}
+.q .serif{font-size:96px;letter-spacing:-.5px}
+html[data-shape="9x16"] .q{font-size:72px;letter-spacing:-1.6px;white-space:nowrap}
+html[data-shape="9x16"] .q .serif{font-size:90px}
+
+/* chips + thread (scene 3) */
+.chip{position:absolute;display:flex;align-items:center;gap:14px;padding:18px 30px;border-radius:999px;background:#fff;
+  border:1.5px solid rgba(26,23,18,.12);font:600 32px Inter;white-space:nowrap;box-shadow:0 6px 18px rgba(26,23,18,.06)}
+.chip i{width:14px;height:14px;border-radius:50%;background:#D8D1C5;display:block}
+
+/* competitor cards (scene 2) */
+.comp{position:absolute;left:0;top:0;width:580px;height:146px;border-radius:22px;background:#2C2823;border:1.5px solid #3B362F;
+  display:flex;align-items:center;gap:20px;padding:0 24px;color:#D6CDBF}
+.comp .av{flex:none;width:76px;height:76px;border-radius:50%;background:#3E3830;display:flex;align-items:center;justify-content:center;color:#9A9083;font:600 26px Inter}
+.comp .nm{font:600 34px Inter;white-space:nowrap}
+.comp .sb{font:400 28px Inter;color:#9A9083;margin-top:4px;white-space:nowrap}
+
+/* WhatsApp phone (scene 4) */
+.waphone{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:110px;background:#121110;padding:26px;
+  box-shadow:0 40px 90px rgba(26,23,18,.18),0 8px 22px rgba(26,23,18,.08)}
+.waphone .scr{position:relative;width:1560px;border-radius:86px;overflow:hidden;background:#EFE7DE}
+.waphone .chat{position:absolute;left:0;right:0;overflow:hidden;
+  background-color:#EFE7DE;background-image:radial-gradient(circle,#E7DFD5 3.2px,transparent 3.8px);background-size:56px 56px;background-position:0 1px}
+.waphone .col{position:absolute;left:0;top:0;width:1560px}
+.waphone.full{border-radius:0;padding:0;box-shadow:none;background:none}
+.waphone.full .scr{border-radius:0}
+.side{position:absolute;font:500 24px Inter;color:var(--muted);white-space:nowrap}
+.side b{font-weight:600;color:var(--ink)}
+
+/* call (scene 6) */
+.panel{position:absolute;border-radius:30px;background:#22201E;overflow:hidden;box-shadow:0 30px 70px rgba(26,23,18,.20)}
+.callcard{position:absolute;border-radius:34px;overflow:hidden;background:#171410;box-shadow:0 30px 70px rgba(26,23,18,.22)}
+
+/* bookings by channel (scene 7), drawn in CRM sheet pixels */
+.crmbg{position:absolute;inset:0;background:#F5F4F5}
+.chart{position:absolute;background:#fff;border:2px solid #ECEAE7;border-radius:22px;font-family:Inter;color:#1d1d1d}
+.chart .t{position:absolute;font-weight:600}
+.chart .s{position:absolute;color:#8f8a84}
+.chart .rule{position:absolute;left:0;right:0;height:2px;background:#EFEDEA}
+.chart .row{position:absolute;display:flex;align-items:center;border-bottom:2px solid #F3F1EE}
+.chart .lb{font-weight:500}
+.chart .track{position:relative;flex:none;border-radius:8px;background:#F1EFEB}
+.chart .bar{position:absolute;left:0;top:0;border-radius:8px;background:#B48A49}
+.chart .n{position:absolute;top:0;font-weight:600;white-space:nowrap}
+.tile{position:absolute;background:#fff;border:2px solid #ECEAE7;border-radius:22px;overflow:hidden}
+.crop{position:absolute;overflow:hidden}
+.crop img{position:absolute;display:block}
+.ctab{position:absolute;left:0;top:0;transform-origin:0 0;background:#fff;border:2px solid #ECEAE7;border-radius:30px;overflow:hidden}
+.ctab .hdr{position:absolute;left:0;right:0;top:0;background:#F5F4F5}
+.ctab .rw{position:absolute;left:0;right:0}
+.ctab .hlrow{position:absolute;left:0;right:0;background:#FBF3E4;border-top:3px solid #A9803F;border-bottom:3px solid #A9803F}
+.scrim{position:absolute;inset:0;background:#1A1712}
+
+/* 9:16 leads list as stacked lead cards */
+.scard{position:absolute;background:#fff;border:2px solid #ECEAE7;border-radius:28px;overflow:hidden;box-shadow:0 10px 30px rgba(26,23,18,.06)}
+.slbl{position:absolute;left:36px;font:600 26px Inter;letter-spacing:2.4px;color:#9a948c}
+.sdd{position:absolute;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;border:2.5px solid #2a2a2a;border-radius:12px;font:400 38px Inter;color:#1d1d1d;background:#fff;white-space:nowrap}
+.sbtn{position:absolute;display:flex;align-items:center;justify-content:center;border:2px solid #E3E1DE;border-radius:14px;font:600 38px Inter;color:#5f5f5f;background:#fff}
+
+/* 9:16 HTML panels where the real layer's text lines are too wide to reach 34 px at 1080 wide */
+.tipsh{position:absolute;left:0;top:0;background:#fff;border-radius:34px;box-shadow:0 30px 80px rgba(26,23,18,.22);overflow:hidden;color:#1A1712}
+.tipsh .hd{display:flex;align-items:center;gap:26px;padding:40px 44px 32px;border-bottom:2px solid #EFEBE5}
+.tipsh .hd .t{font:700 46px Inter;letter-spacing:-.8px}
+.tipsh .hd .s{font:400 30px Inter;color:#7A7266;margin-top:6px}
+.tipsh .tp{position:relative;display:flex;gap:24px;padding:28px 44px;border-bottom:2px solid #F1EDE7;font:400 35px/1.36 Inter}
+.tipsh .tp b{font-weight:600}
+.tipsh .ft{padding:22px 44px 30px;font:400 27px Inter;color:#9A9286}
+.trh{position:absolute;left:0;top:0;background:#22201E;border-radius:30px;overflow:hidden;padding:30px 40px;color:#F2EEE8;box-shadow:0 30px 70px rgba(26,23,18,.20)}
+.trh .lt{font:600 27px Inter;letter-spacing:2.5px;color:#A79E92;margin-bottom:10px}
+.trh .u{margin-top:18px}
+.trh .who{font:600 31px Inter}
+.trh .say{font:400 36px/1.32 Inter;margin-top:4px}
+.confh{position:absolute;left:0;top:0;background:#123524;border-radius:24px;display:flex;align-items:center;gap:26px;padding:26px 36px;color:#fff}
+.confh .ck{flex:none;width:58px;height:58px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center}
+.confh .a{font:700 38px Inter}.confh .b{font:400 33px Inter;color:#CFE9DA;margin-top:4px}
+.leadh{position:absolute;left:0;top:0;background:#fff;border-radius:44px;box-shadow:0 30px 80px rgba(26,23,18,.18)}
+.leadh .sep{position:absolute;left:0;right:0;height:2px;background:#ECE8E2}
+.leadh .sum{position:absolute;background:#FAF7F1;border-radius:30px;padding:34px 40px}
+.leadh .sum .l{font:600 30px Inter;letter-spacing:2.6px;color:#8A6528}
+.leadh .sum .x{font:400 42px/1.38 Inter;color:#3B3731;margin-top:10px}
+
+/* tips highlight */
+.hl{position:absolute;background:#F3E3C4;mix-blend-mode:multiply}
+.dim{position:absolute;background:#fff}
+
+/* sign-in card (scene 8) */
+.signin{position:absolute;left:0;top:0;width:640px;height:760px;border-radius:30px;background:#fff;
+  box-shadow:0 30px 80px rgba(26,23,18,.14),0 4px 10px rgba(26,23,18,.05);overflow:hidden}
+.signin .bar{position:absolute;left:0;right:0;top:0;height:10px}
+.signin .roll{position:absolute;overflow:hidden}
+.signin .roll > div{position:absolute;left:0;top:0;width:100%;height:100%}
+.signin .logo{border-radius:24px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 34px Inter;letter-spacing:.5px}
+.signin .bn{font:700 38px Inter;letter-spacing:-.6px;white-space:nowrap}
+.signin .bs{font:400 22px Inter;color:#8B847A}
+.signin .lbl{position:absolute;left:56px;font:600 21px Inter;letter-spacing:1.4px;color:#9A9286}
+.signin .fld{position:absolute;left:56px;right:56px;height:68px;border-radius:14px;border:1.5px solid #E7E2DA;background:#FCFBF9}
+.signin .fv{position:absolute;left:22px;top:0;font:400 25px/68px Inter;color:#4A443C;white-space:nowrap}
+.signin .btn{border-radius:14px;color:#fff;font:600 25px Inter;display:flex;align-items:center;justify-content:center}
+.signin .pj{display:flex;gap:10px;align-items:center;height:100%}
+.signin .pj span{font:500 23px Inter;padding:8px 16px;border-radius:999px;white-space:nowrap}
+
+/* close */
+.frame{position:absolute;border-radius:30px;overflow:hidden;box-shadow:0 30px 70px rgba(26,23,18,.16)}
+.frame img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+.cta{position:absolute;left:0;right:0;text-align:center;font:500 50px Inter;letter-spacing:-1.2px;white-space:nowrap}
+.cta .w{display:inline-block;margin:0 .12em}
+.cta .serif{font-size:62px;letter-spacing:0}
+.url{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:999px;border:2px solid var(--gold);
+  color:var(--gold);font:600 30px Inter;letter-spacing:-.2px;background:#fff;white-space:nowrap}
+
+/* captions: typed word by word in a frosted pill, bottom-centre */
+#caps{position:absolute;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+#caps .cp{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;border-radius:999px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#caps .cw{display:inline-block;white-space:nowrap}
+#caps .em{font-family:"Instrument Serif";font-style:italic;color:var(--gold)}
+#caps.on-photo .cp{background:rgba(26,23,18,.48);color:#fff}
+#caps.on-cream .cp{background:rgba(255,255,255,.86);color:var(--ink);border:1.5px solid rgba(26,23,18,.08);box-shadow:0 8px 24px rgba(26,23,18,.10)}
+#caps.on-dark .cp{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.08)}
+
+/* Hindi version */
+html[data-lang="hi"] #stage{font-family:Inter,"Noto Sans Devanagari"}
+html[data-lang="hi"] .q,html[data-lang="hi"] .cta{font-family:Inter,"Noto Sans Devanagari"}
+html[data-lang="hi"] .serif,html[data-lang="hi"] #caps .em{font-family:"Instrument Serif","Noto Serif Devanagari"}
+html[data-lang="hi"] .dv{letter-spacing:0}
+html[data-lang="hi"] .q{line-height:1.3}
+html[data-lang="hi"] #caps .em{padding:0 .1em 0 .04em}

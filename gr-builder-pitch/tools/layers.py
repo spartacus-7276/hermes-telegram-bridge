@@ -184,4 +184,8 @@ if __name__ == "__main__":
     for line in tm:
         line.pop("env", None)
     (ROOT / "gen" / "timing.js").write_text("window.TIMING = " + json.dumps(tm) + ";\n")
+    tm = json.loads((ROOT / "audio-hi" / "timing.json").read_text(encoding="utf-8"))  # Hindi version (?lang=hi)
+    for line in tm:
+        line.pop("env", None)
+    (ROOT / "gen" / "timing_hi.js").write_text("window.TIMING_HI = " + json.dumps(tm) + ";\n")
     print(len(META), "layers")
