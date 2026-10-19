@@ -265,7 +265,8 @@ s2b.render = t => {
 const s3 = scene(11.8, 17.2);
 // 16:9: chips left and right on one line; 9:16: the thread runs down the frame
 const L3 = pick({ logo: [960, 250, 820], a: [400, 730], b: [1520, 730], wait: [400, 560], mid: [960, 730], cs: 1 },
-  { logo: [540, 380, 860], a: [540, 900], b: [540, 1640], wait: [540, 690], mid: [540, 1270], cs: 1.3 });
+  CAP === '1' ? { logo: [540, 330, 860], a: [540, 820], b: [540, 1480], wait: [540, 630], mid: [540, 1150], cs: 1.3 } // clear of the caption strip
+    : { logo: [540, 380, 860], a: [540, 900], b: [540, 1640], wait: [540, 690], mid: [540, 1270], cs: 1.3 });
 const logoBox = E('div', 'abs', s3.push);
 IMG('../assets/brand/golden-ratio-horizontal-gold-2400w.png', logoBox, '').style.width = L3.logo[2] + 'px';
 css(logoBox, { left: L3.logo[0] - L3.logo[2] / 2, top: L3.logo[1] - L3.logo[2] * 795 / 2400 / 2 });
@@ -577,7 +578,8 @@ s6a.render = t => {
 const s6b = scene(41.6, 44.6);
 // 16:9: real call layers at 0.64 (28 px); 9:16: the transcript set as HTML at 36 px
 const L6 = pick({ card: [470, 236], call: [470, 600], cz: .45, panel: [880, 110, 927], tz: .64 },
-  { card: [540, 205], call: [540, 560], cz: .45, panel: [40, 830, 1000], tz: 0 });
+  CAP === '1' ? { card: [540, 170], call: [540, 505], cz: .45, panel: [40, 760, 1000], tz: 0 } // clear of the caption strip
+    : { card: [540, 205], call: [540, 560], cz: .45, panel: [40, 830, 1000], tz: 0 });
 const callc = css(E('div', 'callcard', s6b.push), { width: 1560 * L6.cz, height: 1040 * L6.cz });
 IMG(LSRC('call_top'), callc).style.width = '100%';
 const TRT = [41.68, 41.86, 42.42, 42.92, 43.36];
